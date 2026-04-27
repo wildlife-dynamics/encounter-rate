@@ -1,0 +1,371 @@
+base:
+  name: Base Test Case
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Analyze patrol encounter rates with events."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers: []
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 5000
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: true
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          opacity: 0.5
+          max_zoom: 17
+          min_zoom: null
+
+month-grouper:
+  name: Monthly Grouper
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Monthly encounter rate analysis."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers:
+        - temporal_index: "%B"
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 5000
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: false
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          opacity: 0.5
+          max_zoom: 17
+          min_zoom: null
+
+fine-grid:
+  name: 1km Grid Cell Size
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Encounter rate with 1km grid cells."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers: []
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 1000
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: true
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+value-grouper-patrol-type:
+  name: Value Grouper by Patrol Type
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Encounter rate grouped by patrol type."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers:
+        - index_name: "patrol_type"
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_type"
+    filter_patrol_events:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 5000
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: true
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+auto-scale-grid:
+  name: Auto-scale Grid
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Encounter rate with auto-scaled grid."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers: []
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Auto-scale"
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: true
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+with-report:
+  name: With Report Generation
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Encounter Rate Workflow"
+      description: "Encounter rate with report generation."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+    groupers:
+      groupers: []
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 5000
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: false
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
