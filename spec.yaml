@@ -777,7 +777,7 @@ workflow:
             - never
         partial:
           title: ${{ workflow.set_total_hours_title.return }}
-          decimal_places: 1
+          decimal_places: 2
         map:
           argnames: [view, data]
           argvalues: ${{ workflow.total_hours_value.return }}
@@ -803,7 +803,7 @@ workflow:
             - never
         partial:
           title: ${{ workflow.set_total_km_title.return }}
-          decimal_places: 1
+          decimal_places: 2
         map:
           argnames: [view, data]
           argvalues: ${{ workflow.total_km_value.return }}
@@ -908,12 +908,12 @@ workflow:
           query: >-
             SELECT
               CAST(COUNT(*) AS FLOAT) AS "Total Events",
-              ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 1) AS "Total Patrol Hours",
+              ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",
               ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(
                 (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),
                 0
               ), 2) AS "Events Per Hour",
-              ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 1) AS "Total Patrol Km",
+              ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",
               ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(
                 (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),
                 0
