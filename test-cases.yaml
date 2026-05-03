@@ -372,14 +372,14 @@ with-report:
 
 wg-encounter-rate:
   name: WG Encounter Rate
-  mock_io: true
+  mock_io: false
   params:
     workflow_details:
       name: "WG Encounter Rate"
       description: ""
     er_client_name:
       data_source:
-        name: "f65fd6f1-4a9b-49a8-b16d-7fb235929026"
+        name: "westgate"
     time_range:
       since: "2026-04-28T12:30:00.000"
       until: "2026-04-28T23:59:00.000"

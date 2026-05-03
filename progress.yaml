@@ -1,24 +1,29 @@
 phase: develop
-status: in-progress
+status: completed
 lastUpdated: '2026-05-03'
-notes: 'Debugging WG Encounter Rate run; test case added — awaiting issue description'
+notes: |
+  Fixed user-reported rounding inconsistency in Total Patrol Hours/Km widgets and
+  Word report (decimal_places: 1 → 2). Validated via with-report mock test.
+  wg-encounter-rate live test surfaced an unrelated upstream ecoscope bug in
+  get_event_type_display_names_from_events (KeyError on event types missing from
+  ER registry) — left for a separate session/upstream PR.
 
 setup:
   - name: Load context
     status: completed
   - name: Gather requirements
-    status: in-progress
+    status: completed
 
 tasks:
   - name: Add wg-encounter-rate test case
     status: completed
     type: implement
-  - name: Debug reported issue
-    status: pending
+  - name: Bump Total Hours/Km widgets to 2 decimals
+    status: completed
     type: implement
 
 wrapup:
   - name: Self-check
-    status: pending
+    status: completed
   - name: Summary
-    status: pending
+    status: completed
