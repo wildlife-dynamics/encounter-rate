@@ -369,3 +369,66 @@ with-report:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
           opacity: 1.0
+
+wg-encounter-rate:
+  name: WG Encounter Rate
+  mock_io: true
+  params:
+    workflow_details:
+      name: "WG Encounter Rate"
+      description: ""
+    er_client_name:
+      data_source:
+        name: "f65fd6f1-4a9b-49a8-b16d-7fb235929026"
+    time_range:
+      since: "2026-04-28T12:30:00.000"
+      until: "2026-04-28T23:59:00.000"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["routine_patrol"]
+      event_types: []
+      status: ["done"]
+    groupers:
+      groupers: []
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 100000
+        min_time_secs: 1
+        max_time_secs: 172800
+        min_speed_kmhr: 0.01
+        max_speed_kmhr: 500
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      bounding_box:
+        min_x: -180
+        max_x: 180
+        min_y: -90
+        max_y: 90
+      filter_point_coords: []
+    encounter_meshgrid:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: "Customize"
+        grid_cell_size: 100
+      crs: "EPSG:3857"
+    persist_patrol_traj:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_trajectories"
+    persist_patrol_events:
+      filetypes: ["parquet"]
+      filename_prefix: "patrol_events"
+    set_skip_report:
+      var: false
+    create_encounter_report:
+      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          opacity: 0.5

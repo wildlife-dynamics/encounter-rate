@@ -1,0 +1,24 @@
+phase: develop
+status: in-progress
+lastUpdated: '2026-05-03'
+notes: 'Debugging WG Encounter Rate run; test case added — awaiting issue description'
+
+setup:
+  - name: Load context
+    status: completed
+  - name: Gather requirements
+    status: in-progress
+
+tasks:
+  - name: Add wg-encounter-rate test case
+    status: completed
+    type: implement
+  - name: Debug reported issue
+    status: pending
+    type: implement
+
+wrapup:
+  - name: Self-check
+    status: pending
+  - name: Summary
+    status: pending
