@@ -2,8 +2,7 @@
 
 import asyncio
 import json
-from collections.abc import Coroutine
-from typing import Any
+from typing import Any, Coroutine
 
 import pytest
 import pytest_check.context_manager
@@ -12,7 +11,9 @@ from syrupy import SnapshotAssertion
 from syrupy.matchers import path_type
 
 
-def test_failure_response(response_json_failure: dict, snapshot_json: SnapshotAssertion):
+def test_failure_response(
+    response_json_failure: dict, snapshot_json: SnapshotAssertion
+):
     error = response_json_failure["error"]
     trace = response_json_failure["trace"]
     assert isinstance(error, str)
@@ -64,7 +65,10 @@ def test_otel_traces_success(
     # to confirm traceparent propagation from an outside caller into the app/cli
     root_span = next(s for s in otel_traces_success if s.parent_id is None)
     assert root_span.name == "response_json_success_pytest_fixture"
-    assert root_span.attributes["this simulates"] == "traceparent propagation from the FastAPI app"
+    assert (
+        root_span.attributes["this simulates"]
+        == "traceparent propagation from the FastAPI app"
+    )
 
     # depending on api mode, the cli span is either a direct child of the root span
     # (cli mode) or there's an intermediate app request span (app mode) between them
@@ -109,16 +113,21 @@ def test_otel_traces_success(
     # spans one level below `.cli` span represent task instances
     # - their names are the task instance ids
     # - their attributes include the task method used (call, map, mapvalues)
-    task_instance_spans = [s for s in otel_traces_success if s.parent_id == cli_span.span_id]
+    task_instance_spans = [
+        s for s in otel_traces_success if s.parent_id == cli_span.span_id
+    ]
     assert task_instance_spans[0].name == "workflow_details"
     assert all(
-        s.attributes.get("method") in {"call", "map", "mapvalues"} for s in task_instance_spans
+        s.attributes.get("method") in {"call", "map", "mapvalues"}
+        for s in task_instance_spans
     )
     # spans below task instance spans represent function calls within tasks
     # - their names are the function names
     # - their attributes include func.__name__ and func.__module__
     task_function_call_spans = [
-        s for s in otel_traces_success if s.parent_id in {ts.span_id for ts in task_instance_spans}
+        s
+        for s in otel_traces_success
+        if s.parent_id in {ts.span_id for ts in task_instance_spans}
     ]
     assert all(
         (
@@ -128,4 +137,6 @@ def test_otel_traces_success(
         for s in task_function_call_spans
     )
     # and their names should match the function name attribute
-    assert all(s.name == s.attributes["func.__name__"] for s in task_function_call_spans)
+    assert all(
+        s.name == s.attributes["func.__name__"] for s in task_function_call_spans
+    )

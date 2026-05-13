@@ -7,6 +7,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from io import TextIOWrapper
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
 
 import click
@@ -77,11 +78,11 @@ def cli() -> None:
     ),
 )
 def run(
-    config_file: TextIOWrapper | None,
-    config_json: str | None,
+    config_file: Optional[TextIOWrapper],
+    config_json: Optional[str],
     execution_mode: str,
     mock_io: bool,
-    otel_exporter: str | None,
+    otel_exporter: Optional[str],
     otel_console_exporter_dst: str,
 ) -> None:
     import obstore
@@ -107,7 +108,9 @@ def run(
     if (config_file is not None and config_json is not None) or (
         config_file is None and config_json is None
     ):
-        raise click.UsageError("Exactly one of --config-file or --config-json must be provided.")
+        raise click.UsageError(
+            "Exactly one of --config-file or --config-json must be provided."
+        )
 
     # Load configuration based on which option is provided
     if config_file is not None:
@@ -146,7 +149,10 @@ def run(
             target_dir=Path(parsed_results_url.path),
         )
     configure_tracer(
-        RELEASE_NAME, version=_version, exporter=otel_exporter, exporter_kws=otel_exporter_kws
+        RELEASE_NAME,
+        version=_version,
+        exporter=otel_exporter,
+        exporter_kws=otel_exporter_kws,
     )
     if (traceparent := os.environ.get("TRACEPARENT")) is not None:
         attach_context(traceparent, tracestate=os.environ.get("TRACESTATE"))
@@ -163,7 +169,9 @@ def run(
             else "",
             "version": _version,
         }
-        with tracer.start_as_current_span(f"{RELEASE_NAME}.cli", attributes=tracer_attributes):
+        with tracer.start_as_current_span(
+            f"{RELEASE_NAME}.cli", attributes=tracer_attributes
+        ):
             response = dispatch(execution_mode, mock_io, params)
             result_store = obstore.store.from_url(results_url)
             result_bytes = response.model_dump_json().encode("utf-8")

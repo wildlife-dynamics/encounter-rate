@@ -5,7 +5,7 @@ requirements:
     version: "2.11.6"
     channel: "https://repo.prefix.dev/ecoscope-workflows/"
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.0rc3"
+    version: "0.1.0rc4"
     channel: "https://repo.prefix.dev/ecoscope-workflows-custom/"
 
 rjsf-overrides:
@@ -392,6 +392,26 @@ workflow:
           argnames: feature_layers
           argvalues: ${{ workflow.zipped_events_traj.return }}
 
+      - name: Drop Inactive Grid Cells
+        id: drop_inactive_cells
+        task: ecoscope_workflows_ext_custom.tasks.spatial_ops.drop_inactive_grid_cells
+        partial:
+          event_column: "event_count"
+          patrol_effort_column: "patrol_effort_km"
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.encounter_rate_grid.return }}
+
+      - name: Fill NaN Encounter Rate With Zero
+        id: fill_nan_rate
+        task: fill_na
+        partial:
+          columns: ["density"]
+          value: 0
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.drop_inactive_cells.return }}
+
       - name: Sort Encounter Rate Values
         id: sort_rate_values
         task: sort_values
@@ -401,16 +421,7 @@ workflow:
           na_position: "last"
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.encounter_rate_grid.return }}
-
-      - name: Drop NaN Encounter Rate Values
-        id: drop_nan_rate
-        task: drop_nan_values_by_column
-        partial:
-          column_name: "density"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.sort_rate_values.return }}
+          argvalues: ${{ workflow.fill_nan_rate.return }}
 
       - name: Classify Encounter Rate Values
         id: classify_rate
@@ -426,7 +437,7 @@ workflow:
             label_decimals: 2
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.drop_nan_rate.return }}
+          argvalues: ${{ workflow.sort_rate_values.return }}
 
       - name: Encounter Rate Colormap
         id: rate_colormap
@@ -438,6 +449,20 @@ workflow:
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.classify_rate.return }}
+
+      - name: Mask Low-Effort Cells Grey
+        id: mask_low_effort
+        task: ecoscope_workflows_ext_custom.tasks.spatial_ops.mask_low_effort_cells
+        partial:
+          patrol_effort_column: "patrol_effort_km"
+          color_column: "rate_colormap"
+          label_column: "rate_bins"
+          threshold_km: 0.2
+          grey_color: [128, 128, 128, 255]
+          grey_label: "< 200 m patrol effort"
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.rate_colormap.return }}
 
       - id: rename_rate_col
         task: map_columns
@@ -451,7 +476,7 @@ workflow:
           raise_if_not_found: true
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.rate_colormap.return }}
+          argvalues: ${{ workflow.mask_low_effort.return }}
 
       - name: Create Encounter Rate Polygon Layer
         id: rate_polygon_layer
