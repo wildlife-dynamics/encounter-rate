@@ -36,6 +36,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gdk-pixbuf-2.44.6-h2b0a6b4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/genson-1.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/glib-tools-2.88.1-hee1de02_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/go-yq-4.53.2-h280c20c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.14-hecca717_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/graphviz-14.1.2-h8b86629_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gtk3-3.24.52-ha5ea40c_0.conda
@@ -176,6 +177,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdk-pixbuf-2.44.6-h4e57454_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/genson-1.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glib-tools-2.88.1-h37541a8_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/go-yq-4.53.2-h1a92334_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/graphite2-1.3.14-hec049ff_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/graphviz-14.1.2-hec8c438_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gtk3-3.24.52-hc0f3e19_0.conda
@@ -273,6 +275,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/fribidi-1.0.16-hfd05255_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/genson-1.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/getopt-win32-0.1-h6a83c73_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/go-yq-4.53.2-h6a83c73_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/graphite2-1.3.14-hac47afa_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/graphviz-14.1.2-h4c50273_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/gts-0.7.6-h6b5321d_4.conda
@@ -906,6 +909,37 @@ packages:
   license: LGPL-2.1-or-later
   size: 204902
   timestamp: 1778508895255
+- conda: https://conda.anaconda.org/conda-forge/linux-64/go-yq-4.53.2-h280c20c_0.conda
+  sha256: 302739db1489198c5733df19a666086913f1d92d3d03ff14fee305424c016f51
+  md5: 652617a9aa3d4b768cb97e967538e009
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  size: 5606803
+  timestamp: 1776410867994
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/go-yq-4.53.2-h1a92334_0.conda
+  sha256: 4e10b83f6153e8effd4a30d1457e31c3346ac61351b3b1c203983d086d9776eb
+  md5: 1a56facdd2ae131c351006c9e067f8d9
+  depends:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  size: 5102135
+  timestamp: 1776410933711
+- conda: https://conda.anaconda.org/conda-forge/win-64/go-yq-4.53.2-h6a83c73_0.conda
+  sha256: dd76aaaa270129e47ca3deae2f1834556bbd236ef056de500ebfbe5366f6e59c
+  md5: acc9bd39ea9922f5af51ce61464b6df6
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: MIT
+  license_family: MIT
+  size: 5498014
+  timestamp: 1776410944850
 - conda: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.14-hecca717_2.conda
   sha256: 25ba37da5c39697a77fce2c9a15e48cf0a84f1464ad2aafbe53d8357a9f6cc8c
   md5: 2cd94587f3a401ae05e03a6caf09539d
