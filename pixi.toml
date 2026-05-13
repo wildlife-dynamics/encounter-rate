@@ -10,5 +10,5 @@ platforms = ['linux-64', 'osx-arm64', 'win-64']
 published = false
 
 [dependencies]
-wt-compiler = "0.5.0"
+wt-compiler = ">=0.5.2, <0.6"
 graphviz = "*"
