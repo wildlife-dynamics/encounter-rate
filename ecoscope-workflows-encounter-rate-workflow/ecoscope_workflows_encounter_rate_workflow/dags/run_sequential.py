@@ -1651,7 +1651,7 @@ def main(params: Params):
         )
         .partial(
             title=set_total_hours_title,
-            decimal_places=1,
+            decimal_places=2,
             **(params_dict.get("total_hours_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=total_hours_value)
@@ -1691,7 +1691,7 @@ def main(params: Params):
         )
         .partial(
             title=set_total_km_title,
-            decimal_places=1,
+            decimal_places=2,
             **(params_dict.get("total_km_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=total_km_value)
@@ -1906,7 +1906,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            query='SELECT\n  CAST(COUNT(*) AS FLOAT) AS "Total Events",\n  ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 1) AS "Total Patrol Hours",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ), 2) AS "Events Per Hour",\n  ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 1) AS "Total Patrol Km",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ), 2) AS "Events Per Km"\nFROM df',
+            query='SELECT\n  CAST(COUNT(*) AS FLOAT) AS "Total Events",\n  ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ), 2) AS "Events Per Hour",\n  ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ), 2) AS "Events Per Km"\nFROM df',
             columns=["patrol_id", "total_dist_m", "total_time_s"],
             **(params_dict.get("report_stats_sql") or {}),
         )
