@@ -24,7 +24,11 @@ def get_data_connection_property_names() -> dict[str, list[str]]:
                     if isinstance(inner_v, dict) and inner_v.get("$ref"):
                         ref = inner_v.get("$ref")
                         if ref.endswith("Connection"):
-                            key = inner_v.get("$ref").lstrip("#/$defs/").rstrip("Connection")
+                            key = (
+                                inner_v.get("$ref")
+                                .lstrip("#/$defs/")
+                                .rstrip("Connection")
+                            )
                             if data_connections.get(key):
                                 data_connections[key].append(k)
                             else:
@@ -47,8 +51,12 @@ def formdata_to_params(formdata: FormData):
 
 def params_to_formdata(params: dict):
     formdata: dict[str, dict] = {}
-    aliased_annotations = {v.alias: v.annotation for v in FormData.model_fields.values() if v.alias}
-    task_groups = {k: list(get_args(v)[0].model_fields) for k, v in aliased_annotations.items()}
+    aliased_annotations = {
+        v.alias: v.annotation for v in FormData.model_fields.values() if v.alias
+    }
+    task_groups = {
+        k: list(get_args(v)[0].model_fields) for k, v in aliased_annotations.items()
+    }
     for k, v in params.items():
         if k in FormData.model_fields:
             formdata[k] = v

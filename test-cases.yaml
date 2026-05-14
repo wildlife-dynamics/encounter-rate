@@ -1,5 +1,6 @@
 base:
   name: Base Test Case
+  description: Baseline run with default settings; verifies the full pipeline against mocked I/O.
   mock_io: true
   params:
     workflow_details:
@@ -67,6 +68,7 @@ base:
 
 month-grouper:
   name: Monthly Grouper
+  description: Groups dashboard widgets by month to verify per-group splits and the missing-column path through drop_inactive_grid_cells.
   mock_io: true
   params:
     workflow_details:
@@ -135,6 +137,7 @@ month-grouper:
 
 fine-grid:
   name: 1km Grid Cell Size
+  description: Uses a fine 1 km custom grid cell size to exercise the encounter rate map with many small cells.
   mock_io: true
   params:
     workflow_details:
@@ -193,6 +196,7 @@ fine-grid:
 
 value-grouper-patrol-type:
   name: Value Grouper by Patrol Type
+  description: Groups dashboard widgets by patrol type so each patrol category renders as its own view.
   mock_io: true
   params:
     workflow_details:
@@ -252,6 +256,7 @@ value-grouper-patrol-type:
 
 auto-scale-grid:
   name: Auto-scale Grid
+  description: Uses the Auto-scale grid cell size to verify cell size selection from the data extent.
   mock_io: true
   params:
     workflow_details:
@@ -309,6 +314,7 @@ auto-scale-grid:
 
 with-report:
   name: With Report Generation
+  description: Enables Word document report generation to exercise create_docx and the screenshot pipeline.
   mock_io: true
   params:
     workflow_details:

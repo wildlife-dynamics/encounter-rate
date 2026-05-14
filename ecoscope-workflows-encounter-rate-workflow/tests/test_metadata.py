@@ -30,8 +30,12 @@ def formdata(success_case: Case) -> dict:
     the nested structure.
     """
     formdata: dict[str, dict] = {}
-    aliased_annotations = {v.alias: v.annotation for v in FormData.model_fields.values() if v.alias}
-    task_groups = {k: list(get_args(v)[0].model_fields) for k, v in aliased_annotations.items()}
+    aliased_annotations = {
+        v.alias: v.annotation for v in FormData.model_fields.values() if v.alias
+    }
+    task_groups = {
+        k: list(get_args(v)[0].model_fields) for k, v in aliased_annotations.items()
+    }
     for k, v in success_case.params.items():
         if k in FormData.model_fields:
             formdata[k] = v
@@ -60,7 +64,9 @@ def test_get_data_connection_property_names(client: TestClient):
     assert response.status_code == 200
     response_json = response.json()
     assert isinstance(response_json, dict)
-    assert all(isinstance(k, str) and isinstance(v, list) for k, v in response_json.items())
+    assert all(
+        isinstance(k, str) and isinstance(v, list) for k, v in response_json.items()
+    )
 
 
 def test_validate_formdata(client: TestClient, success_case: Case, formdata: dict):
@@ -91,11 +97,15 @@ def test_generate_nested_params(client: TestClient, success_case: Case, formdata
 
 
 def test_round_trip(client: TestClient, success_case: Case, formdata: dict):
-    generate_params_response = client.post("/params-to-formdata", json=success_case.params)
+    generate_params_response = client.post(
+        "/params-to-formdata", json=success_case.params
+    )
     assert generate_params_response.status_code == 200
     assert generate_params_response.json() == formdata
 
-    validate_response = client.post("/formdata-to-params", json=generate_params_response.json())
+    validate_response = client.post(
+        "/formdata-to-params", json=generate_params_response.json()
+    )
     assert validate_response.status_code == 200
 
     assert set(validate_response.json()) == set(success_case.params)

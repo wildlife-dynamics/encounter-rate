@@ -227,10 +227,11 @@ The heatmap answers a different question: *where on the map are events most conc
    - Counts the **events** whose location falls inside the cell → `Events`
    - Calculates the **patrol effort** that intersects the cell — the length of patrol trajectory segments crossing the cell, in kilometers → `Patrol Effort (km)`
    - Computes **Encounter Rate (per km)** = `Events ÷ Patrol Effort (km)`
-3. **Cells with no patrol effort or no events are dropped** so they don't dominate the legend
-4. **Remaining values are classified into 10 equal-interval bins** and colored using a red-yellow-green reversed colormap (red = high encounter rate, green = low)
+3. **Cells with no events AND no patrol effort are dropped** so empty regions show the base map instead of a colored cell.
+4. **Cells with patrol effort below 200 m are rendered grey** with the legend label `< 200 m patrol effort` — they had too little patrol coverage to trust the encounter rate, but the cell is still shown so you can see that *something* happened there (either events with no patrol, or a brief patrol pass).
+5. **Remaining cells (patrol effort ≥ 200 m) are classified into 10 equal-interval bins** and colored using a red-yellow-green reversed colormap (red = high encounter rate, green = low).
 
-This means a hot (red) cell is a place where, *per kilometer that patrols actually walked or drove there*, many events were recorded — not just a place with many events. Areas with a lot of events but a lot of patrol effort can end up cooler than areas with fewer events but very little patrol effort.
+This means a hot (red) cell is a place where, *per kilometer that patrols actually walked or drove there*, many events were recorded — not just a place with many events. Areas with a lot of events but a lot of patrol effort can end up cooler than areas with fewer events but very little patrol effort. Grey cells warn you that the encounter rate there is unreliable due to insufficient patrol coverage.
 
 ### Data Outputs
 
@@ -281,9 +282,9 @@ The dashboard combines summary stats and two interactive maps.
 
 #### Encounter Rate Map
 - **Format**: Interactive grid-based heatmap
-- **Color scale**: Reversed Red-Yellow-Green (red = highest encounter rate, green = lowest), 10 equal-interval bins
+- **Color scale**: Reversed Red-Yellow-Green (red = highest encounter rate, green = lowest), 10 equal-interval bins. Cells with patrol effort under 200 m are rendered grey with a `< 200 m patrol effort` legend entry; cells with no events and no patrol effort are omitted entirely.
 - **Hover tooltips**: Encounter Rate (per km), Events, Patrol Effort (km)
-- **Legend**: Encounter rate ranges with two-decimal labels
+- **Legend**: Encounter rate ranges with two-decimal labels, plus the grey `< 200 m patrol effort` category when any low-coverage cells were detected
 
 ### Grouped Outputs
 

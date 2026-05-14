@@ -6,10 +6,9 @@ import hashlib
 import io
 import json
 import uuid
-from collections.abc import Coroutine, Generator, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Coroutine, Generator, Iterator, Literal
 from unittest.mock import patch
 
 import numpy as np
@@ -71,7 +70,8 @@ def pytest_addoption(parser: pytest.Parser):
 
 def pytest_generate_tests(metafunc: pytest.Metafunc):
     if (
-        "success_case" in metafunc.fixturenames or "failure_case" in metafunc.fixturenames
+        "success_case" in metafunc.fixturenames
+        or "failure_case" in metafunc.fixturenames
     ) and not metafunc.config.getoption("case"):
         raise ValueError("At least one --case must be specified.")
 
@@ -98,19 +98,25 @@ class CustomSnapshotDirnameMixin:
     @classmethod
     def dirname(cls, *, test_location: "PyTestLocation") -> str:
         case_id = next(
-            c for c in test_location.item.config.getoption("case") if c in test_location.item.nodeid
+            c
+            for c in test_location.item.config.getoption("case")
+            if c in test_location.item.nodeid
         )
         return SNAPSHOT_DIRNAME.joinpath(case_id).absolute().as_posix()
 
 
 class CustomJSONSnapshot(CustomSnapshotDirnameMixin, JSONSnapshotExtension):
     @classmethod
-    def get_snapshot_name(cls, *, test_location: "PyTestLocation", index: "SnapshotIndex") -> str:
+    def get_snapshot_name(
+        cls, *, test_location: "PyTestLocation", index: "SnapshotIndex"
+    ) -> str:
         original_name = JSONSnapshotExtension.get_snapshot_name(
             test_location=test_location, index=index
         )
         test_name = original_name.split("[").pop(0)
-        execution_mode = next(s for s in original_name.split("-") if s in ["sequential"])
+        execution_mode = next(
+            s for s in original_name.split("-") if s in ["sequential"]
+        )
         hasdata = "nodata" if "nodata" in original_name else "data"
         specifier = hasdata + (f"-{execution_mode}" if "failure" in test_name else "")
         return test_name + f"[{specifier}]"
@@ -156,7 +162,9 @@ def _join_png_images(png_bytes1: bytes, png_bytes2: bytes) -> bytes:
 
 class CustomPNGSnapshot(CustomSnapshotDirnameMixin, PNGImageSnapshotExtension):
     @classmethod
-    def get_snapshot_name(cls, *, test_location: "PyTestLocation", index: "SnapshotIndex") -> str:
+    def get_snapshot_name(
+        cls, *, test_location: "PyTestLocation", index: "SnapshotIndex"
+    ) -> str:
         original_name = PNGImageSnapshotExtension.get_snapshot_name(
             test_location=test_location, index=index
         )
@@ -165,7 +173,9 @@ class CustomPNGSnapshot(CustomSnapshotDirnameMixin, PNGImageSnapshotExtension):
         return f"{test_name}[{widget_name}]"
 
     @functools.cache
-    def get_structural_similarity(self, serialized_data: bytes, snapshot_data: bytes) -> float:
+    def get_structural_similarity(
+        self, serialized_data: bytes, snapshot_data: bytes
+    ) -> float:
         serialized_arr = _png_bytes_to_array(serialized_data)
         snapshot_arr = _png_bytes_to_array(snapshot_data)
         return ssim(serialized_arr, snapshot_arr, multichannel=True, channel_axis=-1)
@@ -184,7 +194,9 @@ class CustomPNGSnapshot(CustomSnapshotDirnameMixin, PNGImageSnapshotExtension):
         snapshot_data_hash = hashlib.sha256(snapshot_data).hexdigest()[0:7]
         serialized_data_hash = hashlib.sha256(serialized_data).hexdigest()[0:7]
         similarity = self.get_structural_similarity(serialized_data, snapshot_data)
-        diff_image_fname = f"{snapshot_data_hash}_{serialized_data_hash}_ssim{similarity}.diff.png"
+        diff_image_fname = (
+            f"{snapshot_data_hash}_{serialized_data_hash}_ssim{similarity}.diff.png"
+        )
         diff_image_bytes = _join_png_images(snapshot_data, serialized_data)
 
         if not SNAPSHOT_DIFF_OUTPUT_DIRNAME.exists():
@@ -271,7 +283,9 @@ def _run_test_case(
                     "WT_INVOKERS__RESULTS_ENV_VAR": RESULTS_ENV_VAR,
                 },
             ):
-                return case_runner.run_app(app, data_connections_env_vars=data_connections_env_vars)
+                return case_runner.run_app(
+                    app, data_connections_env_vars=data_connections_env_vars
+                )
         case "cli":
             if case.raises:
                 pytest.skip("CLI tests do not yet support error handling.")
@@ -333,7 +347,9 @@ def results_subdir_kws(
 
 
 @pytest.fixture(scope="session")
-def results_subdir_success(success_case: Case, results_subdir_kws: dict, no_data: bool) -> Path:
+def results_subdir_success(
+    success_case: Case, results_subdir_kws: dict, no_data: bool
+) -> Path:
     return _make_results_subdir(success_case, no_data=no_data, **results_subdir_kws)
 
 
@@ -354,7 +370,9 @@ def conftest_tracer_provider(conftest_tracer_dst: Path):
     )
     resource = Resource.create({"service.name": "conftest"})
     provider = SDKTracerProvider(resource=resource)
-    provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter(**otel_exporter_kws)))
+    provider.add_span_processor(
+        SimpleSpanProcessor(ConsoleSpanExporter(**otel_exporter_kws))
+    )
     trace.set_tracer_provider(provider)
     return provider
 
@@ -421,7 +439,9 @@ def response_json_failure(
     results_subdir_failure: Path,
     matchspec_override: str,
 ) -> dict:
-    return _run_test_case(run_params, failure_case, results_subdir_failure, matchspec_override)
+    return _run_test_case(
+        run_params, failure_case, results_subdir_failure, matchspec_override
+    )
 
 
 def _iframe_widgets_from_response_json(response_json: dict) -> list[dict]:
