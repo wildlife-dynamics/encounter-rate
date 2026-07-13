@@ -38,6 +38,8 @@ rjsf-overrides:
     ]
     Encounter Rate Map.properties.encounter_meshgrid.properties.auto_scale_or_custom_cell_size.default:
       auto_scale_or_custom: "Auto-scale"
+    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
+    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.ecoscope:advanced: true
     base_map_defs.properties.base_maps.title: "Map Base Layers"
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
     persist_patrol_traj.properties.filetypes.default: ["parquet"]
@@ -463,7 +465,6 @@ workflow:
           patrol_effort_column: "patrol_effort_km"
           color_column: "rate_colormap"
           label_column: "rate_bins"
-          threshold_km: 0.2
           grey_color: [128, 128, 128, 255]
           grey_label: "< 200 m patrol effort"
         mapvalues:
