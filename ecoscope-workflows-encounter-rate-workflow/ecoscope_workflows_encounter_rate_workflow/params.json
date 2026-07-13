@@ -439,6 +439,20 @@
       "type": "object",
       "title": ""
     },
+    "mask_low_effort": {
+      "additionalProperties": false,
+      "properties": {
+        "threshold_km": {
+          "default": 0.2,
+          "title": "Threshold Km",
+          "type": "number",
+          "description": "Patrol effort threshold (km); cells below it are masked."
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Mask Low-Effort Cells Grey"
+    },
     "persist_patrol_traj": {
       "additionalProperties": false,
       "properties": {
@@ -847,6 +861,7 @@
       "filter_patrol_events",
       "base_map_defs",
       "encounter_meshgrid",
+      "mask_low_effort",
       "persist_patrol_traj",
       "persist_patrol_events",
       "set_enable_report",

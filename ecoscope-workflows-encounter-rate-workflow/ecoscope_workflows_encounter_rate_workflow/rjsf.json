@@ -483,6 +483,21 @@
           "required": [],
           "type": "object",
           "title": ""
+        },
+        "mask_low_effort": {
+          "additionalProperties": false,
+          "properties": {
+            "threshold_km": {
+              "default": 0.2,
+              "title": "Minimum Patrol Effort Threshold (km)",
+              "type": "number",
+              "description": "Patrol effort threshold (km); cells below it are masked.",
+              "ecoscope:advanced": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": "Mask Low-Effort Cells Grey"
         }
       }
     },
@@ -910,6 +925,10 @@
       }
     },
     "Encounter Rate Map": {
+      "ui:order": [
+        "encounter_meshgrid",
+        "mask_low_effort"
+      ],
       "encounter_meshgrid": {
         "ui:order": [
           "auto_scale_or_custom_cell_size",

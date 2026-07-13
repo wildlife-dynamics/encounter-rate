@@ -1035,7 +1035,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             patrol_effort_column="patrol_effort_km",
             color_column="rate_colormap",
             label_column="rate_bins",
-            threshold_km=0.2,
             grey_color=[128, 128, 128, 255],
             grey_label="< 200 m patrol effort",
             **(params.get("mask_low_effort") or {}),
