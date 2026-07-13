@@ -53,8 +53,8 @@ base:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -64,7 +64,6 @@ base:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
 
 month-grouper:
   name: Monthly Grouper
@@ -122,8 +121,8 @@ month-grouper:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: false
+    set_enable_report:
+      var: true
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -133,7 +132,6 @@ month-grouper:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
 
 fine-grid:
   name: 1km Grid Cell Size
@@ -185,8 +183,8 @@ fine-grid:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -245,8 +243,8 @@ value-grouper-patrol-type:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -303,8 +301,8 @@ auto-scale-grid:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -367,8 +365,8 @@ with-report:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: false
+    set_enable_report:
+      var: true
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:

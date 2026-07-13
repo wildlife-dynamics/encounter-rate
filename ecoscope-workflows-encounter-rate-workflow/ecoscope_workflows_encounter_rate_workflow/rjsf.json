@@ -263,17 +263,22 @@
           "default": [
             {
               "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
-              "opacity": 1
+              "opacity": 1,
+              "max_zoom": 20,
+              "min_zoom": 0
             },
             {
               "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              "opacity": 0.5
+              "opacity": 0.5,
+              "max_zoom": 20,
+              "min_zoom": 0
             }
           ],
           "items": {
             "title": "Base Layer",
             "anyOf": [
               {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -298,6 +303,7 @@
                 "type": "object"
               },
               {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
@@ -322,6 +328,7 @@
                 "type": "object"
               },
               {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -346,6 +353,7 @@
                 "type": "object"
               },
               {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
@@ -370,30 +378,7 @@
                 "type": "object"
               },
               {
-                "properties": {
-                  "url": {
-                    "default": "https://tiles.arcgis.com/tiles/POUcpLYXNckpLjnY/arcgis/rest/services/landDx_basemap_tiles_mapservice/MapServer/tile/{z}/{y}/{x}",
-                    "title": "Preset Layer URL",
-                    "type": "string",
-                    "const": "https://tiles.arcgis.com/tiles/POUcpLYXNckpLjnY/arcgis/rest/services/landDx_basemap_tiles_mapservice/MapServer/tile/{z}/{y}/{x}",
-                    "enum": [
-                      "https://tiles.arcgis.com/tiles/POUcpLYXNckpLjnY/arcgis/rest/services/landDx_basemap_tiles_mapservice/MapServer/tile/{z}/{y}/{x}"
-                    ]
-                  },
-                  "opacity": {
-                    "default": 1,
-                    "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
-                    "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
-                    "title": "Layer Opacity",
-                    "type": "number"
-                  }
-                },
-                "title": "LandDx",
-                "type": "object"
-              },
-              {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://server.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
@@ -418,6 +403,7 @@
                 "type": "object"
               },
               {
+                "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
                 "properties": {
                   "url": {
                     "default": "https://example.tiles.com/{z}/{x}/{y}.png",
@@ -436,13 +422,13 @@
                     "type": "number"
                   },
                   "max_zoom": {
-                    "default": null,
+                    "default": 20,
                     "description": "Set the maximum zoom level to fetch tiles for.",
                     "title": "Custom Layer Max Zoom",
                     "type": "integer"
                   },
                   "min_zoom": {
-                    "default": null,
+                    "default": 0,
                     "description": "Set the minimum zoom level to fetch tiles for.",
                     "title": "Custom Layer Min Zoom",
                     "type": "integer"
@@ -567,21 +553,21 @@
       "description": "Generate a Word document report summarizing encounter rate results.",
       "ecoscope:task_group": true,
       "properties": {
-        "set_skip_report": {
+        "set_enable_report": {
           "additionalProperties": false,
           "properties": {
             "var": {
               "title": "",
               "type": "boolean",
-              "description": "Skip generating the Word document report. Uncheck to include a summary report in the output.",
-              "default": true
+              "description": "Generate the Word document summary report. Check to include it in the output.",
+              "default": false
             }
           },
           "required": [
             "var"
           ],
           "type": "object",
-          "title": "Skip Report Generation"
+          "title": "Enable Report Generation"
         },
         "create_encounter_report": {
           "additionalProperties": false,
@@ -962,7 +948,7 @@
     },
     "Generate Report": {
       "ui:order": [
-        "set_skip_report",
+        "set_enable_report",
         "create_encounter_report"
       ]
     },

@@ -7,9 +7,9 @@ Lines specific to the testing context are marked with a test tube emoji (🧪) t
 that they would not be included (or would be different) in the production version of this file.
 """
 
-import json
 import os
 import warnings  # 🧪
+from typing import Any
 
 from ecoscope.platform.tasks.config import set_workflow_details as set_workflow_details
 from ecoscope.platform.tasks.filter import set_time_range as set_time_range
@@ -21,8 +21,11 @@ from ecoscope.platform.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
 )
 from ecoscope.platform.tasks.skip import any_is_empty_df as any_is_empty_df
+from wt_contracts import validate as _validate
 from wt_task import task
 from wt_task.testing import create_func_magicmock  # 🧪
+
+from .. import metadata as _metadata
 
 get_patrols_from_combined_params = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
@@ -103,6 +106,7 @@ from ecoscope_workflows_ext_custom.tasks.io import (
     persist_df_wrapper as persist_df_wrapper,
 )
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
+from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     calculate_encounter_rate_grid as calculate_encounter_rate_grid,
 )
@@ -122,13 +126,12 @@ from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,
 )
 
-from ..params import Params
 
-
-def main(params: Params):
+def main(params: dict[str, Any], validate_params_schema: bool = True):
     warnings.warn("This test script should not be used in production!")  # 🧪
 
-    params_dict = json.loads(params.model_dump_json(exclude_unset=True))
+    if validate_params_schema:
+        _validate(params, _metadata.load_params_schema())
 
     workflow_details = (
         task(set_workflow_details)
@@ -143,7 +146,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("workflow_details") or {}))
+        .partial(**(params.get("workflow_details") or {}))
         .call()
     )
 
@@ -160,7 +163,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("er_client_name") or {}))
+        .partial(**(params.get("er_client_name") or {}))
         .call()
     )
 
@@ -177,9 +180,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            time_format="%d %b %Y %H:%M:%S %Z", **(params_dict.get("time_range") or {})
-        )
+        .partial(time_format="%d %b %Y %H:%M:%S %Z", **(params.get("time_range") or {}))
         .call()
     )
 
@@ -205,7 +206,7 @@ def main(params: Params):
             sub_page_size=100,
             patrols_overlap_daterange=True,
             include_null_geometry=False,
-            **(params_dict.get("er_patrol_and_events_params") or {}),
+            **(params.get("er_patrol_and_events_params") or {}),
         )
         .call()
     )
@@ -225,7 +226,7 @@ def main(params: Params):
         )
         .partial(
             combined_params=er_patrol_and_events_params,
-            **(params_dict.get("prefetch_patrols") or {}),
+            **(params.get("prefetch_patrols") or {}),
         )
         .call()
     )
@@ -246,7 +247,7 @@ def main(params: Params):
         .partial(
             patrols_df=prefetch_patrols,
             combined_params=er_patrol_and_events_params,
-            **(params_dict.get("patrol_obs") or {}),
+            **(params.get("patrol_obs") or {}),
         )
         .call()
     )
@@ -267,7 +268,7 @@ def main(params: Params):
         .partial(
             patrols_df=prefetch_patrols,
             combined_params=er_patrol_and_events_params,
-            **(params_dict.get("patrol_events") or {}),
+            **(params.get("patrol_events") or {}),
         )
         .call()
     )
@@ -289,7 +290,7 @@ def main(params: Params):
             client=er_client_name,
             events_gdf=patrol_events,
             append_category_names="duplicates",
-            **(params_dict.get("event_type_display_names") or {}),
+            **(params.get("event_type_display_names") or {}),
         )
         .call()
     )
@@ -307,7 +308,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(time_range=time_range, **(params_dict.get("get_timezone") or {}))
+        .partial(time_range=time_range, **(params.get("get_timezone") or {}))
         .call()
     )
 
@@ -328,7 +329,7 @@ def main(params: Params):
             df=patrol_obs,
             timezone=get_timezone,
             columns=["fixtime"],
-            **(params_dict.get("convert_patrols_to_tz") or {}),
+            **(params.get("convert_patrols_to_tz") or {}),
         )
         .call()
     )
@@ -350,7 +351,7 @@ def main(params: Params):
             df=event_type_display_names,
             timezone=get_timezone,
             columns=["time"],
-            **(params_dict.get("convert_events_to_tz") or {}),
+            **(params.get("convert_events_to_tz") or {}),
         )
         .call()
     )
@@ -372,7 +373,7 @@ def main(params: Params):
             df=convert_patrols_to_tz,
             prefix="extra__",
             duplicate_strategy="suffix",
-            **(params_dict.get("drop_extra_prefix_obs") or {}),
+            **(params.get("drop_extra_prefix_obs") or {}),
         )
         .call()
     )
@@ -406,7 +407,7 @@ def main(params: Params):
                 {"x": 0.0, "y": 0.0},
                 {"x": 1.0, "y": 1.0},
             ],
-            **(params_dict.get("filter_patrol_obs") or {}),
+            **(params.get("filter_patrol_obs") or {}),
         )
         .call()
     )
@@ -424,9 +425,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            relocations=filter_patrol_obs, **(params_dict.get("patrol_traj") or {})
-        )
+        .partial(relocations=filter_patrol_obs, **(params.get("patrol_traj") or {}))
         .call()
     )
 
@@ -447,7 +446,7 @@ def main(params: Params):
             df=patrol_traj,
             prefix="extra__",
             duplicate_strategy="suffix",
-            **(params_dict.get("drop_extra_prefix_traj") or {}),
+            **(params.get("drop_extra_prefix_traj") or {}),
         )
         .call()
     )
@@ -471,7 +470,7 @@ def main(params: Params):
             drop_columns=["id"],
             retain_columns=[],
             raise_if_not_found=False,
-            **(params_dict.get("customize_columns") or {}),
+            **(params.get("customize_columns") or {}),
         )
         .call()
     )
@@ -489,7 +488,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("groupers") or {}))
+        .partial(**(params.get("groupers") or {}))
         .call()
     )
 
@@ -506,7 +505,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("set_patrol_traj_color_column") or {}))
+        .partial(**(params.get("set_patrol_traj_color_column") or {}))
         .call()
     )
 
@@ -529,7 +528,7 @@ def main(params: Params):
             groupers=groupers,
             cast_to_datetime=True,
             format="mixed",
-            **(params_dict.get("traj_add_temporal_index") or {}),
+            **(params.get("traj_add_temporal_index") or {}),
         )
         .call()
     )
@@ -553,7 +552,7 @@ def main(params: Params):
             retain_columns=[],
             raise_if_not_found=False,
             rename_columns={"patrol_type__value": "patrol_type"},
-            **(params_dict.get("traj_rename_grouper_cols") or {}),
+            **(params.get("traj_rename_grouper_cols") or {}),
         )
         .call()
     )
@@ -593,7 +592,7 @@ def main(params: Params):
             ],
             input_column_name=set_patrol_traj_color_column,
             output_column_name="patrol_traj_colormap",
-            **(params_dict.get("traj_colormap") or {}),
+            **(params.get("traj_colormap") or {}),
         )
         .call()
     )
@@ -627,7 +626,7 @@ def main(params: Params):
                 },
             ],
             reset_index=True,
-            **(params_dict.get("patrol_effort_summary") or {}),
+            **(params.get("patrol_effort_summary") or {}),
         )
         .call()
     )
@@ -649,7 +648,7 @@ def main(params: Params):
             df=convert_events_to_tz,
             prefix="extra__",
             duplicate_strategy="suffix",
-            **(params_dict.get("drop_extra_prefix_events") or {}),
+            **(params.get("drop_extra_prefix_events") or {}),
         )
         .call()
     )
@@ -672,7 +671,7 @@ def main(params: Params):
             roi_gdf=None,
             roi_name=None,
             reset_index=True,
-            **(params_dict.get("filter_patrol_events") or {}),
+            **(params.get("filter_patrol_events") or {}),
         )
         .call()
     )
@@ -700,7 +699,7 @@ def main(params: Params):
             left_index=False,
             right_index=False,
             fillna_value=None,
-            **(params_dict.get("events_with_effort") or {}),
+            **(params.get("events_with_effort") or {}),
         )
         .call()
     )
@@ -724,7 +723,7 @@ def main(params: Params):
             groupers=groupers,
             cast_to_datetime=True,
             format="mixed",
-            **(params_dict.get("pe_add_temporal_index") or {}),
+            **(params.get("pe_add_temporal_index") or {}),
         )
         .call()
     )
@@ -747,7 +746,7 @@ def main(params: Params):
             input_column_name="event_type",
             colormap="tab20b",
             output_column_name="event_type_colormap",
-            **(params_dict.get("pe_colormap") or {}),
+            **(params.get("pe_colormap") or {}),
         )
         .call()
     )
@@ -768,7 +767,7 @@ def main(params: Params):
         .partial(
             df=traj_colormap,
             columns=["patrol_serial_number", "patrol_type"],
-            **(params_dict.get("traj_cols_to_string") or {}),
+            **(params.get("traj_cols_to_string") or {}),
         )
         .call()
     )
@@ -789,7 +788,7 @@ def main(params: Params):
         .partial(
             df=pe_colormap,
             columns=["patrol_serial_number", "patrol_type"],
-            **(params_dict.get("pe_cols_to_string") or {}),
+            **(params.get("pe_cols_to_string") or {}),
         )
         .call()
     )
@@ -810,7 +809,7 @@ def main(params: Params):
         .partial(
             df=traj_cols_to_string,
             groupers=groupers,
-            **(params_dict.get("split_traj_groups") or {}),
+            **(params.get("split_traj_groups") or {}),
         )
         .call()
     )
@@ -831,7 +830,7 @@ def main(params: Params):
         .partial(
             df=pe_cols_to_string,
             groupers=groupers,
-            **(params_dict.get("split_pe_groups") or {}),
+            **(params.get("split_pe_groups") or {}),
         )
         .call()
     )
@@ -849,7 +848,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("base_map_defs") or {}))
+        .partial(**(params.get("base_map_defs") or {}))
         .call()
     )
 
@@ -868,7 +867,7 @@ def main(params: Params):
         )
         .partial(
             iterables=[split_pe_groups, split_traj_groups],
-            **(params_dict.get("zipped_events_traj") or {}),
+            **(params.get("zipped_events_traj") or {}),
         )
         .call()
     )
@@ -888,9 +887,9 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            aoi=pe_cols_to_string,
+            aoi=traj_cols_to_string,
             intersecting_only=True,
-            **(params_dict.get("encounter_meshgrid") or {}),
+            **(params.get("encounter_meshgrid") or {}),
         )
         .call()
     )
@@ -909,8 +908,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            meshgrid=encounter_meshgrid,
-            **(params_dict.get("encounter_rate_grid") or {}),
+            meshgrid=encounter_meshgrid, **(params.get("encounter_rate_grid") or {})
         )
         .mapvalues(argnames=["feature_layers"], argvalues=zipped_events_traj)
     )
@@ -931,7 +929,7 @@ def main(params: Params):
         .partial(
             event_column="event_count",
             patrol_effort_column="patrol_effort_km",
-            **(params_dict.get("drop_inactive_cells") or {}),
+            **(params.get("drop_inactive_cells") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=encounter_rate_grid)
     )
@@ -949,9 +947,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            columns=["density"], value=0, **(params_dict.get("fill_nan_rate") or {})
-        )
+        .partial(columns=["density"], value=0, **(params.get("fill_nan_rate") or {}))
         .mapvalues(argnames=["df"], argvalues=drop_inactive_cells)
     )
 
@@ -972,7 +968,7 @@ def main(params: Params):
             column_name="density",
             ascending=True,
             na_position="last",
-            **(params_dict.get("sort_rate_values") or {}),
+            **(params.get("sort_rate_values") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=fill_nan_rate)
     )
@@ -995,7 +991,7 @@ def main(params: Params):
             output_column_name="rate_bins",
             classification_options={"scheme": "equal_interval", "k": 10},
             label_options={"label_ranges": True, "label_decimals": 2},
-            **(params_dict.get("classify_rate") or {}),
+            **(params.get("classify_rate") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=sort_rate_values)
     )
@@ -1017,7 +1013,7 @@ def main(params: Params):
             input_column_name="rate_bins",
             colormap="RdYlGn_r",
             output_column_name="rate_colormap",
-            **(params_dict.get("rate_colormap") or {}),
+            **(params.get("rate_colormap") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=classify_rate)
     )
@@ -1042,7 +1038,7 @@ def main(params: Params):
             threshold_km=0.2,
             grey_color=[128, 128, 128, 255],
             grey_label="< 200 m patrol effort",
-            **(params_dict.get("mask_low_effort") or {}),
+            **(params.get("mask_low_effort") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=rate_colormap)
     )
@@ -1069,7 +1065,7 @@ def main(params: Params):
                 "patrol_effort_km": "Patrol Effort (km)",
             },
             raise_if_not_found=True,
-            **(params_dict.get("rename_rate_col") or {}),
+            **(params.get("rename_rate_col") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=mask_low_effort)
     )
@@ -1096,7 +1092,7 @@ def main(params: Params):
             },
             legend={"label_column": "rate_bins", "color_column": "rate_colormap"},
             tooltip_columns=["Encounter Rate (per km)", "Events", "Patrol Effort (km)"],
-            **(params_dict.get("rate_polygon_layer") or {}),
+            **(params.get("rate_polygon_layer") or {}),
         )
         .mapvalues(argnames=["geodataframe"], argvalues=rename_rate_col)
     )
@@ -1114,9 +1110,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            var="Encounter Rate Map", **(params_dict.get("set_rate_map_title") or {})
-        )
+        .partial(var="Encounter Rate Map", **(params.get("set_rate_map_title") or {}))
         .call()
     )
 
@@ -1145,7 +1139,7 @@ def main(params: Params):
             static=False,
             max_zoom=20,
             widget_id=set_rate_map_title,
-            **(params_dict.get("rate_ecomap") or {}),
+            **(params.get("rate_ecomap") or {}),
         )
         .mapvalues(argnames=["geo_layers"], argvalues=rate_polygon_layer)
     )
@@ -1166,7 +1160,7 @@ def main(params: Params):
         .partial(
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             filename_suffix="encounter_rate_map",
-            **(params_dict.get("rate_ecomap_html_urls") or {}),
+            **(params.get("rate_ecomap_html_urls") or {}),
         )
         .mapvalues(argnames=["text"], argvalues=rate_ecomap)
     )
@@ -1183,9 +1177,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            title=set_rate_map_title, **(params_dict.get("rate_map_widgets") or {})
-        )
+        .partial(title=set_rate_map_title, **(params.get("rate_map_widgets") or {}))
         .map(argnames=["view", "data"], argvalues=rate_ecomap_html_urls)
     )
 
@@ -1203,8 +1195,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            widgets=rate_map_widgets,
-            **(params_dict.get("grouped_rate_map_widget") or {}),
+            widgets=rate_map_widgets, **(params.get("grouped_rate_map_widget") or {})
         )
         .call()
     )
@@ -1224,7 +1215,7 @@ def main(params: Params):
         )
         .partial(
             var="Patrol Trajectories and Events Map",
-            **(params_dict.get("set_patrol_map_title") or {}),
+            **(params.get("set_patrol_map_title") or {}),
         )
         .call()
     )
@@ -1253,7 +1244,7 @@ def main(params: Params):
                 "timespan_seconds": "Duration (s)",
                 "speed_kmhr": "Speed (kph)",
             },
-            **(params_dict.get("rename_traj_display_cols") or {}),
+            **(params.get("rename_traj_display_cols") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_traj_groups)
     )
@@ -1280,7 +1271,7 @@ def main(params: Params):
                 "event_type": "Event Type",
                 "time": "Event Time",
             },
-            **(params_dict.get("rename_event_display_cols") or {}),
+            **(params.get("rename_event_display_cols") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
@@ -1316,7 +1307,7 @@ def main(params: Params):
                 "Duration (s)",
                 "Speed (kph)",
             ],
-            **(params_dict.get("traj_map_layers") or {}),
+            **(params.get("traj_map_layers") or {}),
         )
         .mapvalues(argnames=["geodataframe"], argvalues=rename_traj_display_cols)
     )
@@ -1339,7 +1330,7 @@ def main(params: Params):
             layer_style={"fill_color_column": "event_type_colormap", "get_radius": 5},
             legend=None,
             tooltip_columns=["Patrol Serial", "Event Type", "Event Time"],
-            **(params_dict.get("event_map_layers") or {}),
+            **(params.get("event_map_layers") or {}),
         )
         .mapvalues(argnames=["geodataframe"], argvalues=rename_event_display_cols)
     )
@@ -1359,7 +1350,7 @@ def main(params: Params):
         )
         .partial(
             iterables=[traj_map_layers, event_map_layers],
-            **(params_dict.get("combined_traj_event_layers") or {}),
+            **(params.get("combined_traj_event_layers") or {}),
         )
         .call()
     )
@@ -1389,7 +1380,7 @@ def main(params: Params):
             static=False,
             max_zoom=20,
             widget_id=set_patrol_map_title,
-            **(params_dict.get("patrol_ecomap") or {}),
+            **(params.get("patrol_ecomap") or {}),
         )
         .mapvalues(argnames=["geo_layers"], argvalues=combined_traj_event_layers)
     )
@@ -1410,7 +1401,7 @@ def main(params: Params):
         .partial(
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             filename_suffix="patrol_map",
-            **(params_dict.get("patrol_ecomap_html_urls") or {}),
+            **(params.get("patrol_ecomap_html_urls") or {}),
         )
         .mapvalues(argnames=["text"], argvalues=patrol_ecomap)
     )
@@ -1427,9 +1418,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            title=set_patrol_map_title, **(params_dict.get("patrol_map_widgets") or {})
-        )
+        .partial(title=set_patrol_map_title, **(params.get("patrol_map_widgets") or {}))
         .map(argnames=["view", "data"], argvalues=patrol_ecomap_html_urls)
     )
 
@@ -1448,7 +1437,7 @@ def main(params: Params):
         )
         .partial(
             widgets=patrol_map_widgets,
-            **(params_dict.get("grouped_patrol_map_widget") or {}),
+            **(params.get("grouped_patrol_map_widget") or {}),
         )
         .call()
     )
@@ -1467,7 +1456,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            var="Total Patrol Hours", **(params_dict.get("set_total_hours_title") or {})
+            var="Total Patrol Hours", **(params.get("set_total_hours_title") or {})
         )
         .call()
     )
@@ -1485,7 +1474,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(var="Events Per Hour", **(params_dict.get("set_rate_hr_title") or {}))
+        .partial(var="Events Per Hour", **(params.get("set_rate_hr_title") or {}))
         .call()
     )
 
@@ -1502,7 +1491,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(var="Total Patrol Km", **(params_dict.get("set_total_km_title") or {}))
+        .partial(var="Total Patrol Km", **(params.get("set_total_km_title") or {}))
         .call()
     )
 
@@ -1519,7 +1508,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(var="Events Per Km", **(params_dict.get("set_rate_km_title") or {}))
+        .partial(var="Events Per Km", **(params.get("set_rate_km_title") or {}))
         .call()
     )
 
@@ -1536,9 +1525,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            var="Total Events", **(params_dict.get("set_total_events_title") or {})
-        )
+        .partial(var="Total Events", **(params.get("set_total_events_title") or {}))
         .call()
     )
 
@@ -1556,9 +1543,10 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
+            sanitize=True,
             query="SELECT\n  CAST(COUNT(*) AS FLOAT) AS total_events,\n  (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0 AS total_hours,\n  CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ) AS events_per_hour,\n  (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0 AS total_km,\n  CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ) AS events_per_km\nFROM df",
             columns=["patrol_id", "total_dist_m", "total_time_s"],
-            **(params_dict.get("encounter_stats_sql") or {}),
+            **(params.get("encounter_stats_sql") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
@@ -1576,9 +1564,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            column_name="total_events", **(params_dict.get("total_events_value") or {})
-        )
+        .partial(column_name="total_events", **(params.get("total_events_value") or {}))
         .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
     )
 
@@ -1595,9 +1581,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            column_name="total_hours", **(params_dict.get("total_hours_value") or {})
-        )
+        .partial(column_name="total_hours", **(params.get("total_hours_value") or {}))
         .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
     )
 
@@ -1615,8 +1599,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            column_name="events_per_hour",
-            **(params_dict.get("rate_per_hr_value") or {}),
+            column_name="events_per_hour", **(params.get("rate_per_hr_value") or {})
         )
         .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
     )
@@ -1634,7 +1617,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(column_name="total_km", **(params_dict.get("total_km_value") or {}))
+        .partial(column_name="total_km", **(params.get("total_km_value") or {}))
         .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
     )
 
@@ -1651,9 +1634,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            column_name="events_per_km", **(params_dict.get("rate_per_km_value") or {})
-        )
+        .partial(column_name="events_per_km", **(params.get("rate_per_km_value") or {}))
         .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
     )
 
@@ -1672,7 +1653,7 @@ def main(params: Params):
         .partial(
             title=set_total_hours_title,
             decimal_places=2,
-            **(params_dict.get("total_hours_widget") or {}),
+            **(params.get("total_hours_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=total_hours_value)
     )
@@ -1692,7 +1673,7 @@ def main(params: Params):
         .partial(
             title=set_rate_hr_title,
             decimal_places=2,
-            **(params_dict.get("rate_hr_widget") or {}),
+            **(params.get("rate_hr_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=rate_per_hr_value)
     )
@@ -1712,7 +1693,7 @@ def main(params: Params):
         .partial(
             title=set_total_km_title,
             decimal_places=2,
-            **(params_dict.get("total_km_widget") or {}),
+            **(params.get("total_km_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=total_km_value)
     )
@@ -1732,7 +1713,7 @@ def main(params: Params):
         .partial(
             title=set_rate_km_title,
             decimal_places=2,
-            **(params_dict.get("rate_km_widget") or {}),
+            **(params.get("rate_km_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=rate_per_km_value)
     )
@@ -1752,7 +1733,7 @@ def main(params: Params):
         )
         .partial(
             widgets=total_hours_widget,
-            **(params_dict.get("grouped_total_hours_widget") or {}),
+            **(params.get("grouped_total_hours_widget") or {}),
         )
         .call()
     )
@@ -1770,9 +1751,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            widgets=rate_hr_widget, **(params_dict.get("grouped_rate_hr_widget") or {})
-        )
+        .partial(widgets=rate_hr_widget, **(params.get("grouped_rate_hr_widget") or {}))
         .call()
     )
 
@@ -1790,8 +1769,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            widgets=total_km_widget,
-            **(params_dict.get("grouped_total_km_widget") or {}),
+            widgets=total_km_widget, **(params.get("grouped_total_km_widget") or {})
         )
         .call()
     )
@@ -1811,7 +1789,7 @@ def main(params: Params):
         .partial(
             title=set_total_events_title,
             decimal_places=0,
-            **(params_dict.get("total_events_widget") or {}),
+            **(params.get("total_events_widget") or {}),
         )
         .map(argnames=["view", "data"], argvalues=total_events_value)
     )
@@ -1829,9 +1807,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            widgets=rate_km_widget, **(params_dict.get("grouped_rate_km_widget") or {})
-        )
+        .partial(widgets=rate_km_widget, **(params.get("grouped_rate_km_widget") or {}))
         .call()
     )
 
@@ -1850,7 +1826,7 @@ def main(params: Params):
         )
         .partial(
             widgets=total_events_widget,
-            **(params_dict.get("grouped_total_events_widget") or {}),
+            **(params.get("grouped_total_events_widget") or {}),
         )
         .call()
     )
@@ -1870,7 +1846,7 @@ def main(params: Params):
         .partial(
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
-            **(params_dict.get("persist_patrol_traj") or {}),
+            **(params.get("persist_patrol_traj") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_traj_groups)
     )
@@ -1890,15 +1866,15 @@ def main(params: Params):
         .partial(
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
-            **(params_dict.get("persist_patrol_events") or {}),
+            **(params.get("persist_patrol_events") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
 
-    set_skip_report = (
+    set_enable_report = (
         task(set_bool_var)
         .validate()
-        .set_task_instance_id("set_skip_report")
+        .set_task_instance_id("set_enable_report")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -1908,7 +1884,24 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("set_skip_report") or {}))
+        .partial(**(params.get("set_enable_report") or {}))
+        .call()
+    )
+
+    skip_report = (
+        task(invert_bool)
+        .validate()
+        .set_task_instance_id("skip_report")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(value=set_enable_report, **(params.get("skip_report") or {}))
         .call()
     )
 
@@ -1926,9 +1919,10 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
+            sanitize=True,
             query='SELECT\n  CAST(COUNT(*) AS FLOAT) AS "Total Events",\n  ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ), 2) AS "Events Per Hour",\n  ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ), 2) AS "Events Per Km"\nFROM df',
             columns=["patrol_id", "total_dist_m", "total_time_s"],
-            **(params_dict.get("report_stats_sql") or {}),
+            **(params.get("report_stats_sql") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
@@ -1946,7 +1940,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            skip=set_skip_report,
+            skip=skip_report,
             context={
                 "items": [
                     {
@@ -1986,7 +1980,7 @@ def main(params: Params):
             groupers=groupers,
             output_dir=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             filename_prefix="encounter_rate_report",
-            **(params_dict.get("create_encounter_report") or {}),
+            **(params.get("create_encounter_report") or {}),
         )
         .call()
     )
@@ -2017,7 +2011,7 @@ def main(params: Params):
             ],
             groupers=groupers,
             time_range=time_range,
-            **(params_dict.get("encounter_dashboard") or {}),
+            **(params.get("encounter_dashboard") or {}),
         )
         .call()
     )
