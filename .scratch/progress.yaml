@@ -1,0 +1,29 @@
+phase: develop
+status: in-progress
+lastUpdated: '2026-07-13'
+notes: >-
+  Bug: encounter rate grid footprint differs from trajectory map on mmnr.
+  Root cause identified: encounter_meshgrid aoi uses patrol EVENTS
+  (pe_cols_to_string) so the grid bbox is clipped to the events extent;
+  patrolled areas with no events (eastern loop) get no cells.
+  Awaiting user approval of task list.
+
+setup:
+  - name: Load context
+    status: completed
+  - name: Gather requirements
+    status: completed
+
+tasks:
+  - name: Fix meshgrid AOI (events -> trajectories)
+    status: pending
+    type: implement
+  - name: Validate on real mmnr data
+    status: pending
+    type: implement
+
+wrapup:
+  - name: Self-check
+    status: pending
+  - name: Summary
+    status: pending
