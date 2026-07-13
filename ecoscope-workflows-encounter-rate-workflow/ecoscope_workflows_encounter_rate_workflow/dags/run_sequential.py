@@ -84,6 +84,7 @@ from ecoscope_workflows_ext_custom.tasks.io import (
     persist_df_wrapper as persist_df_wrapper,
 )
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
+from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     calculate_encounter_rate_grid as calculate_encounter_rate_grid,
 )
@@ -1522,6 +1523,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
+            sanitize=True,
             query="SELECT\n  CAST(COUNT(*) AS FLOAT) AS total_events,\n  (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0 AS total_hours,\n  CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ) AS events_per_hour,\n  (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0 AS total_km,\n  CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ) AS events_per_km\nFROM df",
             columns=["patrol_id", "total_dist_m", "total_time_s"],
             **(params.get("encounter_stats_sql") or {}),
@@ -1849,10 +1851,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
 
-    set_skip_report = (
+    set_enable_report = (
         task(set_bool_var)
         .validate()
-        .set_task_instance_id("set_skip_report")
+        .set_task_instance_id("set_enable_report")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -1862,7 +1864,24 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("set_skip_report") or {}))
+        .partial(**(params.get("set_enable_report") or {}))
+        .call()
+    )
+
+    skip_report = (
+        task(invert_bool)
+        .validate()
+        .set_task_instance_id("skip_report")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(value=set_enable_report, **(params.get("skip_report") or {}))
         .call()
     )
 
@@ -1880,6 +1899,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
+            sanitize=True,
             query='SELECT\n  CAST(COUNT(*) AS FLOAT) AS "Total Events",\n  ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ), 2) AS "Events Per Hour",\n  ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ), 2) AS "Events Per Km"\nFROM df',
             columns=["patrol_id", "total_dist_m", "total_time_s"],
             **(params.get("report_stats_sql") or {}),
@@ -1900,7 +1920,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            skip=set_skip_report,
+            skip=skip_report,
             context={
                 "items": [
                     {

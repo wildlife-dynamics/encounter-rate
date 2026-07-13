@@ -53,8 +53,8 @@ base:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -121,8 +121,8 @@ month-grouper:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: false
+    set_enable_report:
+      var: true
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -183,8 +183,8 @@ fine-grid:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -243,8 +243,8 @@ value-grouper-patrol-type:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -301,8 +301,8 @@ auto-scale-grid:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: true
+    set_enable_report:
+      var: false
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
@@ -365,8 +365,8 @@ with-report:
     persist_patrol_events:
       filetypes: ["parquet"]
       filename_prefix: "patrol_events"
-    set_skip_report:
-      var: false
+    set_enable_report:
+      var: true
     create_encounter_report:
       template_path: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:

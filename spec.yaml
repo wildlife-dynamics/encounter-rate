@@ -45,9 +45,9 @@ rjsf-overrides:
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
     persist_patrol_events.properties.filetypes.default: ["parquet"]
     persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
-    Generate Report.properties.set_skip_report.properties.var.description: >-
-      Skip generating the Word document report. Uncheck to include a summary report in the output.
-    Generate Report.properties.set_skip_report.properties.var.default: true
+    Generate Report.properties.set_enable_report.properties.var.description: >-
+      Generate the Word document summary report. Check to include it in the output.
+    Generate Report.properties.set_enable_report.properties.var.default: false
     Generate Report.properties.create_encounter_report.properties.template_path.default: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
   $defs:
     ValueGrouper:
@@ -736,6 +736,7 @@ workflow:
         id: encounter_stats_sql
         task: apply_sql_query
         partial:
+          sanitize: true
           query: >-
             SELECT
               CAST(COUNT(*) AS FLOAT) AS total_events,
@@ -928,14 +929,21 @@ workflow:
     description: >-
       Generate a Word document report summarizing encounter rate results.
     tasks:
-      - name: Skip Report Generation
-        id: set_skip_report
+      - name: Enable Report Generation
+        id: set_enable_report
         task: set_bool_var
+
+      - name: Invert Enable to Skip
+        id: skip_report
+        task: ecoscope_workflows_ext_custom.tasks.skip.invert_bool
+        partial:
+          value: ${{ workflow.set_enable_report.return }}
 
       - name: Calculate Report Stats
         id: report_stats_sql
         task: apply_sql_query
         partial:
+          sanitize: true
           query: >-
             SELECT
               CAST(COUNT(*) AS FLOAT) AS "Total Events",
@@ -962,7 +970,7 @@ workflow:
           conditions:
             - never
         partial:
-          skip: ${{ workflow.set_skip_report.return }}
+          skip: ${{ workflow.skip_report.return }}
           context:
             items:
               - item_type: timerange
