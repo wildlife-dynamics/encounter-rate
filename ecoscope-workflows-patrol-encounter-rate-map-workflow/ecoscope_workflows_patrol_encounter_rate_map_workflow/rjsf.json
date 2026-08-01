@@ -123,14 +123,53 @@
         }
       }
     },
-    "Process Patrol Observations": {
+    "Filter Data": {
       "type": "object",
-      "description": "Process patrol observations into trajectories.",
+      "description": " ",
       "ecoscope:task_group": true,
       "properties": {
-        "patrol_traj": {
+        "patrol_filters": {
           "additionalProperties": false,
           "properties": {
+            "bounding_box": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/BoundingBox"
+                }
+              ],
+              "default": {
+                "min_y": -90.0,
+                "max_y": 90.0,
+                "min_x": -180.0,
+                "max_x": 180.0
+              },
+              "title": "Bounding Box",
+              "description": "Only include patrol observations and events whose coordinates fall inside this bounding box.",
+              "ecoscope:advanced": true
+            },
+            "filter_point_coords": {
+              "default": [
+                {
+                  "y": 90.0,
+                  "x": 180.0
+                },
+                {
+                  "y": 0.0,
+                  "x": 0.0
+                },
+                {
+                  "y": 1.0,
+                  "x": 1.0
+                }
+              ],
+              "items": {
+                "$ref": "#/$defs/Coordinate"
+              },
+              "title": "Filter Exact Point Coordinates",
+              "type": "array",
+              "description": "Exclude observations and events recorded at these exact coordinates (e.g. known bad GPS fixes).",
+              "ecoscope:advanced": true
+            },
             "trajectory_segment_filter": {
               "allOf": [
                 {
@@ -145,15 +184,22 @@
                 "min_speed_kmhr": 0.01,
                 "max_speed_kmhr": 500
               },
-              "title": " ",
-              "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
+              "title": "Trajectory Filter",
+              "description": "Drop trajectory segments outside these length / time / speed bounds (e.g. to remove implausible jumps).",
               "ecoscope:advanced": true
             }
           },
-          "required": [],
           "type": "object",
-          "title": "Trajectory Segment Filter"
-        },
+          "required": [],
+          "title": ""
+        }
+      }
+    },
+    "Group Data": {
+      "type": "object",
+      "description": "Configure how data is grouped (by category, temporal index or spatial feature group) and split into per-group dashboard views.",
+      "ecoscope:task_group": true,
+      "properties": {
         "groupers": {
           "additionalProperties": false,
           "properties": {
@@ -190,47 +236,6 @@
           "type": "object",
           "required": [],
           "title": "Group Data"
-        }
-      }
-    },
-    "Process Patrol Events": {
-      "type": "object",
-      "description": "Process patrol events by applying filters, merging effort data, and indexing.",
-      "ecoscope:task_group": true,
-      "properties": {
-        "filter_patrol_events": {
-          "additionalProperties": false,
-          "properties": {
-            "bounding_box": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/BoundingBox"
-                }
-              ],
-              "default": {
-                "min_y": -90.0,
-                "max_y": 90.0,
-                "min_x": -180.0,
-                "max_x": 180.0
-              },
-              "title": "Bounding Box",
-              "description": "Filter events to inside these bounding coordinates.",
-              "ecoscope:advanced": true
-            },
-            "filter_point_coords": {
-              "default": [],
-              "items": {
-                "$ref": "#/$defs/Coordinate"
-              },
-              "title": "Filter Exact Point Coordinates",
-              "type": "array",
-              "description": "By adding a filter, the workflow will not include events recorded at the specified coordinates.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Apply Coordinate Filter to Patrol Events"
         }
       }
     },
@@ -575,6 +580,56 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
     "TrajectorySegmentFilter": {
       "properties": {
         "min_length_meters": {
@@ -707,56 +762,6 @@
         }
       }
     },
-    "BoundingBox": {
-      "properties": {
-        "min_y": {
-          "default": -90.0,
-          "ecoscope:advanced": true,
-          "title": "Min Latitude",
-          "type": "number"
-        },
-        "max_y": {
-          "default": 90.0,
-          "ecoscope:advanced": true,
-          "title": "Max Latitude",
-          "type": "number"
-        },
-        "min_x": {
-          "default": -180.0,
-          "ecoscope:advanced": true,
-          "title": "Min Longitude",
-          "type": "number"
-        },
-        "max_x": {
-          "default": 180.0,
-          "ecoscope:advanced": true,
-          "title": "Max Longitude",
-          "type": "number"
-        }
-      },
-      "title": "BoundingBox",
-      "type": "object"
-    },
-    "Coordinate": {
-      "properties": {
-        "y": {
-          "description": "Example -0.15293",
-          "title": "Latitude",
-          "type": "number"
-        },
-        "x": {
-          "description": "Example 37.30906",
-          "title": "Longitude",
-          "type": "number"
-        }
-      },
-      "required": [
-        "y",
-        "x"
-      ],
-      "title": "Coordinate",
-      "type": "object"
-    },
     "AutoScaleGridCellSize": {
       "properties": {
         "auto_scale_or_custom": {
@@ -823,26 +828,12 @@
         ]
       }
     },
-    "Process Patrol Observations": {
-      "ui:order": [
-        "patrol_traj",
-        "groupers"
-      ],
-      "filter_patrol_obs": {
-        "filter_point_coords": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
-        }
-      }
-    },
-    "Process Patrol Events": {
-      "filter_patrol_events": {
+    "Filter Data": {
+      "patrol_filters": {
         "ui:order": [
           "bounding_box",
-          "filter_point_coords"
+          "filter_point_coords",
+          "trajectory_segment_filter"
         ],
         "filter_point_coords": {
           "items": {
@@ -894,8 +885,8 @@
       "er_client_name",
       "time_range",
       "Patrol and Event Types",
-      "Process Patrol Observations",
-      "Process Patrol Events",
+      "Filter Data",
+      "Group Data",
       "base_map_defs",
       "Encounter Rate Map",
       "Generate Report"

@@ -46,32 +46,31 @@ get_event_type_display_names_from_events = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_event_type_display_names_from_events",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.config import get_bounding_box as get_bounding_box
+from ecoscope.platform.tasks.config import (
+    get_filter_point_coords as get_filter_point_coords,
+)
+from ecoscope.platform.tasks.config import get_segment_filter as get_segment_filter
+from ecoscope.platform.tasks.config import set_traj_filters as set_traj_filters
 from ecoscope.platform.tasks.filter import (
     get_timezone_from_time_range as get_timezone_from_time_range,
 )
 from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
-from ecoscope.platform.tasks.preprocessing import (
-    relocations_to_trajectory as relocations_to_trajectory,
-)
-from ecoscope.platform.tasks.transformation import (
-    apply_reloc_coord_filter as apply_reloc_coord_filter,
-)
 from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
 from ecoscope.platform.tasks.transformation import (
-    drop_column_prefix as drop_column_prefix,
-)
-from ecoscope.platform.tasks.transformation import (
     extract_spatial_grouper_feature_group_names as extract_spatial_grouper_feature_group_names,
 )
-from ecoscope.platform.tasks.transformation import map_columns as map_columns
 
 get_spatial_features_group = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_spatial_features_group",  # 🧪
 )  # 🧪
 from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
+from ecoscope.platform.tasks.preprocessing import (
+    relocations_to_trajectory as relocations_to_trajectory,
+)
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
     add_spatial_index as add_spatial_index,
@@ -79,6 +78,13 @@ from ecoscope.platform.tasks.transformation import (
 from ecoscope.platform.tasks.transformation import (
     add_temporal_index as add_temporal_index,
 )
+from ecoscope.platform.tasks.transformation import (
+    apply_reloc_coord_filter as apply_reloc_coord_filter,
+)
+from ecoscope.platform.tasks.transformation import (
+    drop_column_prefix as drop_column_prefix,
+)
+from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope.platform.tasks.transformation import (
     resolve_spatial_feature_groups_for_spatial_groupers as resolve_spatial_feature_groups_for_spatial_groupers,
 )
@@ -88,9 +94,6 @@ process_events_details = create_func_magicmock(  # 🧪
     func_name="process_events_details",  # 🧪
 )  # 🧪
 from ecoscope.platform.tasks.analysis import create_meshgrid as create_meshgrid
-from ecoscope.platform.tasks.analysis import (
-    dataframe_column_mean as dataframe_column_mean,
-)
 from ecoscope.platform.tasks.config import concat_string_vars as concat_string_vars
 from ecoscope.platform.tasks.config import (
     default_if_string_is_empty as default_if_string_is_empty,
@@ -107,9 +110,6 @@ from ecoscope.platform.tasks.results import (
     create_map_widget_single_view as create_map_widget_single_view,
 )
 from ecoscope.platform.tasks.results import create_polygon_layer as create_polygon_layer
-from ecoscope.platform.tasks.results import (
-    create_single_value_widget_single_view as create_single_value_widget_single_view,
-)
 from ecoscope.platform.tasks.results import draw_ecomap as draw_ecomap
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_views
@@ -379,10 +379,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    drop_extra_prefix_obs = (
-        task(drop_column_prefix)
+    patrol_filters = (
+        task(set_traj_filters)
         .validate()
-        .set_task_instance_id("drop_extra_prefix_obs")
+        .set_task_instance_id("patrol_filters")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -392,19 +392,14 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(
-            df=convert_patrols_to_tz,
-            prefix="extra__",
-            duplicate_strategy="suffix",
-            **(params.get("drop_extra_prefix_obs") or {}),
-        )
+        .partial(**(params.get("patrol_filters") or {}))
         .call()
     )
 
-    filter_patrol_obs = (
-        task(apply_reloc_coord_filter)
+    bounding_box = (
+        task(get_bounding_box)
         .validate()
-        .set_task_instance_id("filter_patrol_obs")
+        .set_task_instance_id("bounding_box")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -414,31 +409,14 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(
-            df=drop_extra_prefix_obs,
-            roi_gdf=None,
-            roi_name=None,
-            reset_index=False,
-            bounding_box={
-                "min_x": -180.0,
-                "max_x": 180.0,
-                "min_y": -90.0,
-                "max_y": 90.0,
-            },
-            filter_point_coords=[
-                {"x": 180.0, "y": 90.0},
-                {"x": 0.0, "y": 0.0},
-                {"x": 1.0, "y": 1.0},
-            ],
-            **(params.get("filter_patrol_obs") or {}),
-        )
+        .partial(filters=patrol_filters, **(params.get("bounding_box") or {}))
         .call()
     )
 
-    patrol_traj = (
-        task(relocations_to_trajectory)
+    filter_point_coords = (
+        task(get_filter_point_coords)
         .validate()
-        .set_task_instance_id("patrol_traj")
+        .set_task_instance_id("filter_point_coords")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -448,14 +426,14 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(relocations=filter_patrol_obs, **(params.get("patrol_traj") or {}))
+        .partial(filters=patrol_filters, **(params.get("filter_point_coords") or {}))
         .call()
     )
 
-    drop_extra_prefix_traj = (
-        task(drop_column_prefix)
+    segment_filter = (
+        task(get_segment_filter)
         .validate()
-        .set_task_instance_id("drop_extra_prefix_traj")
+        .set_task_instance_id("segment_filter")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -465,36 +443,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(
-            df=patrol_traj,
-            prefix="extra__",
-            duplicate_strategy="suffix",
-            **(params.get("drop_extra_prefix_traj") or {}),
-        )
-        .call()
-    )
-
-    customize_columns = (
-        task(map_columns)
-        .validate()
-        .set_task_instance_id("customize_columns")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=drop_extra_prefix_traj,
-            rename_columns={},
-            drop_columns=["id"],
-            retain_columns=[],
-            raise_if_not_found=False,
-            **(params.get("customize_columns") or {}),
-        )
+        .partial(filters=patrol_filters, **(params.get("segment_filter") or {}))
         .call()
     )
 
@@ -568,6 +517,120 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             groupers=groupers,
             spatial_feature_groups=fetch_all_spatial_feature_groups,
             **(params.get("resolved_groupers") or {}),
+        )
+        .call()
+    )
+
+    drop_extra_prefix_obs = (
+        task(drop_column_prefix)
+        .validate()
+        .set_task_instance_id("drop_extra_prefix_obs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=convert_patrols_to_tz,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params.get("drop_extra_prefix_obs") or {}),
+        )
+        .call()
+    )
+
+    filter_patrol_obs = (
+        task(apply_reloc_coord_filter)
+        .validate()
+        .set_task_instance_id("filter_patrol_obs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_obs,
+            roi_gdf=None,
+            roi_name=None,
+            reset_index=False,
+            bounding_box=bounding_box,
+            filter_point_coords=filter_point_coords,
+            **(params.get("filter_patrol_obs") or {}),
+        )
+        .call()
+    )
+
+    patrol_traj = (
+        task(relocations_to_trajectory)
+        .validate()
+        .set_task_instance_id("patrol_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            relocations=filter_patrol_obs,
+            trajectory_segment_filter=segment_filter,
+            **(params.get("patrol_traj") or {}),
+        )
+        .call()
+    )
+
+    drop_extra_prefix_traj = (
+        task(drop_column_prefix)
+        .validate()
+        .set_task_instance_id("drop_extra_prefix_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_traj,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params.get("drop_extra_prefix_traj") or {}),
+        )
+        .call()
+    )
+
+    customize_columns = (
+        task(map_columns)
+        .validate()
+        .set_task_instance_id("customize_columns")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_traj,
+            rename_columns={},
+            drop_columns=["id"],
+            retain_columns=[],
+            raise_if_not_found=False,
+            **(params.get("customize_columns") or {}),
         )
         .call()
     )
@@ -783,6 +846,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             roi_gdf=None,
             roi_name=None,
             reset_index=True,
+            bounding_box=bounding_box,
+            filter_point_coords=filter_point_coords,
             **(params.get("filter_patrol_events") or {}),
         )
         .call()
@@ -1444,394 +1509,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    set_total_hours_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_total_hours_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            var="Total Patrol Hours", **(params.get("set_total_hours_title") or {})
-        )
-        .call()
-    )
-
-    set_rate_hr_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_rate_hr_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(var="Events Per Hour", **(params.get("set_rate_hr_title") or {}))
-        .call()
-    )
-
-    set_total_km_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_total_km_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(var="Total Patrol Km", **(params.get("set_total_km_title") or {}))
-        .call()
-    )
-
-    set_rate_km_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_rate_km_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(var="Events Per Km", **(params.get("set_rate_km_title") or {}))
-        .call()
-    )
-
-    set_total_events_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_total_events_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(var="Total Events", **(params.get("set_total_events_title") or {}))
-        .call()
-    )
-
-    encounter_stats_sql = (
-        task(apply_sql_query)
-        .validate()
-        .set_task_instance_id("encounter_stats_sql")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            sanitize=True,
-            query="SELECT\n  CAST(COUNT(*) AS FLOAT) AS total_events,\n  (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0 AS total_hours,\n  CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ) AS events_per_hour,\n  (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0 AS total_km,\n  CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ) AS events_per_km\nFROM df",
-            columns=["patrol_id", "total_dist_m", "total_time_s"],
-            **(params.get("encounter_stats_sql") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=aligned_split_pe_groups)
-    )
-
-    total_events_value = (
-        task(dataframe_column_mean)
-        .validate()
-        .set_task_instance_id("total_events_value")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(column_name="total_events", **(params.get("total_events_value") or {}))
-        .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
-    )
-
-    total_hours_value = (
-        task(dataframe_column_mean)
-        .validate()
-        .set_task_instance_id("total_hours_value")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(column_name="total_hours", **(params.get("total_hours_value") or {}))
-        .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
-    )
-
-    rate_per_hr_value = (
-        task(dataframe_column_mean)
-        .validate()
-        .set_task_instance_id("rate_per_hr_value")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            column_name="events_per_hour", **(params.get("rate_per_hr_value") or {})
-        )
-        .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
-    )
-
-    total_km_value = (
-        task(dataframe_column_mean)
-        .validate()
-        .set_task_instance_id("total_km_value")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(column_name="total_km", **(params.get("total_km_value") or {}))
-        .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
-    )
-
-    rate_per_km_value = (
-        task(dataframe_column_mean)
-        .validate()
-        .set_task_instance_id("rate_per_km_value")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(column_name="events_per_km", **(params.get("rate_per_km_value") or {}))
-        .mapvalues(argnames=["df"], argvalues=encounter_stats_sql)
-    )
-
-    total_hours_widget = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("total_hours_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=set_total_hours_title,
-            decimal_places=2,
-            **(params.get("total_hours_widget") or {}),
-        )
-        .map(argnames=["view", "data"], argvalues=total_hours_value)
-    )
-
-    rate_hr_widget = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("rate_hr_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=set_rate_hr_title,
-            decimal_places=2,
-            **(params.get("rate_hr_widget") or {}),
-        )
-        .map(argnames=["view", "data"], argvalues=rate_per_hr_value)
-    )
-
-    total_km_widget = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("total_km_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=set_total_km_title,
-            decimal_places=2,
-            **(params.get("total_km_widget") or {}),
-        )
-        .map(argnames=["view", "data"], argvalues=total_km_value)
-    )
-
-    rate_km_widget = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("rate_km_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=set_rate_km_title,
-            decimal_places=2,
-            **(params.get("rate_km_widget") or {}),
-        )
-        .map(argnames=["view", "data"], argvalues=rate_per_km_value)
-    )
-
-    grouped_total_hours_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_total_hours_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            widgets=total_hours_widget,
-            **(params.get("grouped_total_hours_widget") or {}),
-        )
-        .call()
-    )
-
-    grouped_rate_hr_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_rate_hr_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(widgets=rate_hr_widget, **(params.get("grouped_rate_hr_widget") or {}))
-        .call()
-    )
-
-    grouped_total_km_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_total_km_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            widgets=total_km_widget, **(params.get("grouped_total_km_widget") or {})
-        )
-        .call()
-    )
-
-    total_events_widget = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("total_events_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=set_total_events_title,
-            decimal_places=0,
-            **(params.get("total_events_widget") or {}),
-        )
-        .map(argnames=["view", "data"], argvalues=total_events_value)
-    )
-
-    grouped_rate_km_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_rate_km_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(widgets=rate_km_widget, **(params.get("grouped_rate_km_widget") or {}))
-        .call()
-    )
-
-    grouped_total_events_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_total_events_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            widgets=total_events_widget,
-            **(params.get("grouped_total_events_widget") or {}),
-        )
-        .call()
-    )
-
     set_enable_report = (
         task(set_bool_var)
         .validate()
@@ -1950,14 +1627,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             details=workflow_details,
-            widgets=[
-                grouped_total_events_widget,
-                grouped_total_hours_widget,
-                grouped_rate_hr_widget,
-                grouped_total_km_widget,
-                grouped_rate_km_widget,
-                grouped_rate_map_widget,
-            ],
+            widgets=[grouped_rate_map_widget],
             groupers=resolved_groupers,
             time_range=time_range,
             **(params.get("encounter_dashboard") or {}),

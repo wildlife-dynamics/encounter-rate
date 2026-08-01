@@ -23,7 +23,7 @@ base:
       event_types: []
     groupers:
       groupers: []
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -31,7 +31,6 @@ base:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       bounding_box:
         min_x: -180.0
         max_x: 180.0
@@ -83,7 +82,7 @@ month-grouper:
     groupers:
       groupers:
         - temporal_index: "%B"
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -91,7 +90,6 @@ month-grouper:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       bounding_box:
         min_x: -180.0
         max_x: 180.0
@@ -142,7 +140,7 @@ fine-grid:
       event_types: []
     groupers:
       groupers: []
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -150,7 +148,6 @@ fine-grid:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
         - {x: 0.0, y: 0.0}
@@ -194,7 +191,7 @@ value-grouper-patrol-type:
     groupers:
       groupers:
         - index_name: "patrol_type"
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -202,7 +199,6 @@ value-grouper-patrol-type:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
         - {x: 0.0, y: 0.0}
@@ -245,7 +241,7 @@ auto-scale-grid:
       event_types: []
     groupers:
       groupers: []
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -253,7 +249,6 @@ auto-scale-grid:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
         - {x: 0.0, y: 0.0}
@@ -295,7 +290,7 @@ with-report:
       event_types: []
     groupers:
       groupers: []
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -303,7 +298,6 @@ with-report:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       bounding_box:
         min_x: -180.0
         max_x: 180.0
@@ -356,7 +350,7 @@ spatial-grouper:
         # Must match the mock feature group's metadata.display_name — the
         # resolve task keys its lookup on that, not on the requested name.
         - spatial_index_name: "SpatialGrouperTest"
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -364,7 +358,6 @@ spatial-grouper:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       bounding_box:
         min_x: -180.0
         max_x: 180.0
@@ -415,7 +408,7 @@ agg-column:
       event_types: []
     groupers:
       groupers: []
-    patrol_traj:
+    patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
         max_length_meters: 10000.0
@@ -423,7 +416,6 @@ agg-column:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    filter_patrol_events:
       bounding_box:
         min_x: -180.0
         max_x: 180.0
