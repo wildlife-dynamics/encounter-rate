@@ -25,13 +25,8 @@
         "widget_id": 4, "static": false
     },
     {
-        "i": "5", "x": 0, "y": 4, "w": 5, "h": 12,
+        "i": "5", "x": 0, "y": 4, "w": 10, "h": 12,
         "minW": 5, "minH": 10,
         "widget_id": 5, "static": false
-    },
-    {
-        "i": "6", "x": 5, "y": 4, "w": 5, "h": 12,
-        "minW": 5, "minH": 10,
-        "widget_id": 6, "static": false
     }
 ]

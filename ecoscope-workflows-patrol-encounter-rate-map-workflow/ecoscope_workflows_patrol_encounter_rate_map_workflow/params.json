@@ -168,20 +168,6 @@
       "required": [],
       "title": "Group Data"
     },
-    "set_patrol_traj_color_column": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "title": "",
-          "type": "string"
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Style Trajectory By Category"
-    },
     "filter_patrol_events": {
       "additionalProperties": false,
       "properties": {
@@ -452,72 +438,6 @@
       "required": [],
       "type": "object",
       "title": "Mask Low-Effort Cells Grey"
-    },
-    "persist_patrol_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "gpkg",
-              "geoparquet",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": null,
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Trajectories"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "gpkg",
-              "geoparquet",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": null,
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Events"
     },
     "set_enable_report": {
       "additionalProperties": false,
@@ -838,18 +758,6 @@
         "crs"
       ]
     },
-    "persist_patrol_traj": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
-    "persist_patrol_events": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
     "ui:order": [
       "workflow_details",
       "er_client_name",
@@ -857,13 +765,10 @@
       "er_patrol_and_events_params",
       "patrol_traj",
       "groupers",
-      "set_patrol_traj_color_column",
       "filter_patrol_events",
       "base_map_defs",
       "encounter_meshgrid",
       "mask_low_effort",
-      "persist_patrol_traj",
-      "persist_patrol_events",
       "set_enable_report",
       "create_encounter_report"
     ]

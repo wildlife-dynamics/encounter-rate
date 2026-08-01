@@ -31,8 +31,6 @@ base:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_subject"
     filter_patrol_events:
       bounding_box:
         min_x: -180.0
@@ -47,12 +45,6 @@ base:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: false
     create_encounter_report:
@@ -99,8 +91,6 @@ month-grouper:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_subject"
     filter_patrol_events:
       bounding_box:
         min_x: -180.0
@@ -115,12 +105,6 @@ month-grouper:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: true
     create_encounter_report:
@@ -166,8 +150,6 @@ fine-grid:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_subject"
     filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
@@ -177,12 +159,6 @@ fine-grid:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 1000
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: false
     create_encounter_report:
@@ -226,8 +202,6 @@ value-grouper-patrol-type:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_type"
     filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
@@ -237,12 +211,6 @@ value-grouper-patrol-type:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: false
     create_encounter_report:
@@ -285,8 +253,6 @@ auto-scale-grid:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_subject"
     filter_patrol_events:
       filter_point_coords:
         - {x: 180.0, y: 90.0}
@@ -295,12 +261,6 @@ auto-scale-grid:
     encounter_meshgrid:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Auto-scale"
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: false
     create_encounter_report:
@@ -343,8 +303,6 @@ with-report:
         min_time_secs: 1.0
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
-    set_patrol_traj_color_column:
-      var: "patrol_subject"
     filter_patrol_events:
       bounding_box:
         min_x: -180.0
@@ -359,12 +317,6 @@ with-report:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    persist_patrol_traj:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet"]
-      filename_prefix: "patrol_events"
     set_enable_report:
       var: true
     create_encounter_report:

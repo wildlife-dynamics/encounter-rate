@@ -178,40 +178,6 @@
           "type": "object",
           "required": [],
           "title": "Group Data"
-        },
-        "set_patrol_traj_color_column": {
-          "additionalProperties": false,
-          "properties": {
-            "var": {
-              "title": "Category",
-              "type": "string",
-              "default": "patrol_subject",
-              "description": "Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
-              "oneOf": [
-                {
-                  "const": "patrol_type",
-                  "title": "Patrol Type"
-                },
-                {
-                  "const": "patrol_status",
-                  "title": "Patrol Status"
-                },
-                {
-                  "const": "patrol_subject",
-                  "title": "Patrol Subject"
-                },
-                {
-                  "const": "patrol_serial_number",
-                  "title": "Patrol Serial Number"
-                }
-              ]
-            }
-          },
-          "required": [
-            "var"
-          ],
-          "type": "object",
-          "title": "Style Trajectory By Category"
         }
       }
     },
@@ -500,68 +466,6 @@
           "title": "Mask Low-Effort Cells Grey"
         }
       }
-    },
-    "persist_patrol_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_trajectories",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Trajectories"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_events",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Events"
     },
     "Generate Report": {
       "type": "object",
@@ -896,8 +800,7 @@
     "Process Patrol Observations": {
       "ui:order": [
         "patrol_traj",
-        "groupers",
-        "set_patrol_traj_color_column"
+        "groupers"
       ],
       "filter_patrol_obs": {
         "filter_point_coords": {
@@ -953,18 +856,6 @@
         }
       }
     },
-    "persist_patrol_traj": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
-    "persist_patrol_events": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
     "Generate Report": {
       "ui:order": [
         "set_enable_report",
@@ -980,8 +871,6 @@
       "Process Patrol Events",
       "base_map_defs",
       "Encounter Rate Map",
-      "persist_patrol_traj",
-      "persist_patrol_events",
       "Generate Report"
     ],
     "base_map_defs": {

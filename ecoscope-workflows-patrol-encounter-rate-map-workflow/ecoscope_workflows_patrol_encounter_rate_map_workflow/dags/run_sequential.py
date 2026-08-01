@@ -40,11 +40,7 @@ from ecoscope.platform.tasks.preprocessing import (
 from ecoscope.platform.tasks.results import (
     create_map_widget_single_view as create_map_widget_single_view,
 )
-from ecoscope.platform.tasks.results import create_point_layer as create_point_layer
 from ecoscope.platform.tasks.results import create_polygon_layer as create_polygon_layer
-from ecoscope.platform.tasks.results import (
-    create_polyline_layer as create_polyline_layer,
-)
 from ecoscope.platform.tasks.results import (
     create_single_value_widget_single_view as create_single_value_widget_single_view,
 )
@@ -80,9 +76,6 @@ from ecoscope.platform.tasks.transformation import (
 from ecoscope.platform.tasks.transformation import fill_na as fill_na
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
-from ecoscope_workflows_ext_custom.tasks.io import (
-    persist_df_wrapper as persist_df_wrapper,
-)
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
 from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
@@ -472,23 +465,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    set_patrol_traj_color_column = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_patrol_traj_color_column")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("set_patrol_traj_color_column") or {}))
-        .call()
-    )
-
     traj_add_temporal_index = (
         task(add_temporal_index)
         .validate()
@@ -533,46 +509,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             raise_if_not_found=False,
             rename_columns={"patrol_type__value": "patrol_type"},
             **(params.get("traj_rename_grouper_cols") or {}),
-        )
-        .call()
-    )
-
-    traj_colormap = (
-        task(apply_color_map)
-        .validate()
-        .set_task_instance_id("traj_colormap")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=traj_rename_grouper_cols,
-            colormap=[
-                "#FF9600",
-                "#F23B0E",
-                "#A100CB",
-                "#F04564",
-                "#03421A",
-                "#3089FF",
-                "#E26FFF",
-                "#8C1700",
-                "#002960",
-                "#FFD000",
-                "#B62879",
-                "#680078",
-                "#005A56",
-                "#0056C7",
-                "#331878",
-                "#E76826",
-            ],
-            input_column_name=set_patrol_traj_color_column,
-            output_column_name="patrol_traj_colormap",
-            **(params.get("traj_colormap") or {}),
         )
         .call()
     )
@@ -708,29 +644,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    pe_colormap = (
-        task(apply_color_map)
-        .validate()
-        .set_task_instance_id("pe_colormap")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=pe_add_temporal_index,
-            input_column_name="event_type",
-            colormap="tab20b",
-            output_column_name="event_type_colormap",
-            **(params.get("pe_colormap") or {}),
-        )
-        .call()
-    )
-
     traj_cols_to_string = (
         task(convert_column_values_to_string)
         .validate()
@@ -745,7 +658,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=traj_colormap,
+            df=traj_rename_grouper_cols,
             columns=["patrol_serial_number", "patrol_type"],
             **(params.get("traj_cols_to_string") or {}),
         )
@@ -766,7 +679,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=pe_colormap,
+            df=pe_add_temporal_index,
             columns=["patrol_serial_number", "patrol_type"],
             **(params.get("pe_cols_to_string") or {}),
         )
@@ -1179,248 +1092,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    set_patrol_map_title = (
-        task(set_string_var)
-        .validate()
-        .set_task_instance_id("set_patrol_map_title")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            var="Patrol Trajectories and Events Map",
-            **(params.get("set_patrol_map_title") or {}),
-        )
-        .call()
-    )
-
-    rename_traj_display_cols = (
-        task(map_columns)
-        .validate()
-        .set_task_instance_id("rename_traj_display_cols")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            drop_columns=[],
-            retain_columns=[],
-            raise_if_not_found=False,
-            rename_columns={
-                "patrol_serial_number": "Patrol Serial",
-                "patrol_type__display": "Patrol Type",
-                "segment_start": "Start Time",
-                "timespan_seconds": "Duration (s)",
-                "speed_kmhr": "Speed (kph)",
-            },
-            **(params.get("rename_traj_display_cols") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=split_traj_groups)
-    )
-
-    rename_event_display_cols = (
-        task(map_columns)
-        .validate()
-        .set_task_instance_id("rename_event_display_cols")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            drop_columns=[],
-            retain_columns=[],
-            raise_if_not_found=False,
-            rename_columns={
-                "patrol_serial_number": "Patrol Serial",
-                "event_type": "Event Type",
-                "time": "Event Time",
-            },
-            **(params.get("rename_event_display_cols") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
-    )
-
-    traj_map_layers = (
-        task(create_polyline_layer)
-        .validate()
-        .set_task_instance_id("traj_map_layers")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-                all_geometry_are_none,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            layer_style={
-                "get_width": 3,
-                "width_units": "pixels",
-                "color_column": "patrol_traj_colormap",
-            },
-            legend={
-                "label_column": set_patrol_traj_color_column,
-                "color_column": "patrol_traj_colormap",
-            },
-            tooltip_columns=[
-                "Patrol Serial",
-                "Patrol Type",
-                "Start Time",
-                "Duration (s)",
-                "Speed (kph)",
-            ],
-            **(params.get("traj_map_layers") or {}),
-        )
-        .mapvalues(argnames=["geodataframe"], argvalues=rename_traj_display_cols)
-    )
-
-    event_map_layers = (
-        task(create_point_layer)
-        .validate()
-        .set_task_instance_id("event_map_layers")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-                all_geometry_are_none,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            layer_style={"fill_color_column": "event_type_colormap", "get_radius": 5},
-            legend=None,
-            tooltip_columns=["Patrol Serial", "Event Type", "Event Time"],
-            **(params.get("event_map_layers") or {}),
-        )
-        .mapvalues(argnames=["geodataframe"], argvalues=rename_event_display_cols)
-    )
-
-    combined_traj_event_layers = (
-        task(groupbykey)
-        .validate()
-        .set_task_instance_id("combined_traj_event_layers")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_dependency_skipped,
-                all_keyed_iterables_are_skips,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            iterables=[traj_map_layers, event_map_layers],
-            **(params.get("combined_traj_event_layers") or {}),
-        )
-        .call()
-    )
-
-    patrol_ecomap = (
-        task(draw_ecomap)
-        .validate()
-        .set_task_instance_id("patrol_ecomap")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title=None,
-            tile_layers=base_map_defs,
-            north_arrow_style={"placement": "top-left"},
-            legend_style={
-                "title": set_patrol_traj_color_column,
-                "format_title": True,
-                "placement": "bottom-right",
-            },
-            static=False,
-            max_zoom=20,
-            widget_id=set_patrol_map_title,
-            **(params.get("patrol_ecomap") or {}),
-        )
-        .mapvalues(argnames=["geo_layers"], argvalues=combined_traj_event_layers)
-    )
-
-    patrol_ecomap_html_urls = (
-        task(persist_text)
-        .validate()
-        .set_task_instance_id("patrol_ecomap_html_urls")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-            filename_suffix="patrol_map",
-            **(params.get("patrol_ecomap_html_urls") or {}),
-        )
-        .mapvalues(argnames=["text"], argvalues=patrol_ecomap)
-    )
-
-    patrol_map_widgets = (
-        task(create_map_widget_single_view)
-        .validate()
-        .set_task_instance_id("patrol_map_widgets")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(title=set_patrol_map_title, **(params.get("patrol_map_widgets") or {}))
-        .map(argnames=["view", "data"], argvalues=patrol_ecomap_html_urls)
-    )
-
-    grouped_patrol_map_widget = (
-        task(merge_widget_views)
-        .validate()
-        .set_task_instance_id("grouped_patrol_map_widget")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            widgets=patrol_map_widgets,
-            **(params.get("grouped_patrol_map_widget") or {}),
-        )
-        .call()
-    )
-
     set_total_hours_title = (
         task(set_string_var)
         .validate()
@@ -1810,46 +1481,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    persist_patrol_traj = (
-        task(persist_df_wrapper)
-        .validate()
-        .set_task_instance_id("persist_patrol_traj")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-            sanitize=True,
-            **(params.get("persist_patrol_traj") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=split_traj_groups)
-    )
-
-    persist_patrol_events = (
-        task(persist_df_wrapper)
-        .validate()
-        .set_task_instance_id("persist_patrol_events")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-            sanitize=True,
-            **(params.get("persist_patrol_events") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
-    )
-
     set_enable_report = (
         task(set_bool_var)
         .validate()
@@ -1936,16 +1567,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                     },
                     {
                         "item_type": "image",
-                        "key": "patrol_maps",
-                        "value": patrol_ecomap_html_urls,
-                        "screenshot_config": {
-                            "wait_for_timeout": 20000,
-                            "max_concurrent_pages": 2,
-                            "device_scale_factor": 1.0,
-                        },
-                    },
-                    {
-                        "item_type": "image",
                         "key": "rate_maps",
                         "value": rate_ecomap_html_urls,
                         "screenshot_config": {
@@ -1985,7 +1606,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 grouped_rate_hr_widget,
                 grouped_total_km_widget,
                 grouped_rate_km_widget,
-                grouped_patrol_map_widget,
                 grouped_rate_map_widget,
             ],
             groupers=groupers,
