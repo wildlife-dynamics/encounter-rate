@@ -462,6 +462,20 @@
           "type": "object",
           "title": ""
         },
+        "encounter_rate_grid": {
+          "additionalProperties": false,
+          "properties": {
+            "sum_column": {
+              "default": "",
+              "title": "Sum Column",
+              "type": "string",
+              "description": "Sum values in this event column per grid cell as the encounter rate numerator, rather than counting events. Leave empty to count events per cell."
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": "Calculate Encounter Rate per Cell"
+        },
         "mask_low_effort": {
           "additionalProperties": false,
           "properties": {
@@ -842,6 +856,7 @@
     "Encounter Rate Map": {
       "ui:order": [
         "encounter_meshgrid",
+        "encounter_rate_grid",
         "mask_low_effort"
       ],
       "encounter_meshgrid": {

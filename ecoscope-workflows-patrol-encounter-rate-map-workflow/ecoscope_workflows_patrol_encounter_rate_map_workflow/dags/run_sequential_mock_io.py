@@ -60,12 +60,12 @@ from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
 from ecoscope.platform.tasks.transformation import (
+    drop_column_prefix as drop_column_prefix,
+)
+from ecoscope.platform.tasks.transformation import (
     extract_spatial_grouper_feature_group_names as extract_spatial_grouper_feature_group_names,
 )
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
-from ecoscope_workflows_ext_custom.tasks.transformation import (
-    drop_column_prefix as drop_column_prefix,
-)
 
 get_spatial_features_group = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
@@ -107,6 +107,7 @@ from ecoscope.platform.tasks.transformation import (
     apply_classification as apply_classification,
 )
 from ecoscope.platform.tasks.transformation import apply_color_map as apply_color_map
+from ecoscope.platform.tasks.transformation import apply_sql_query as apply_sql_query
 from ecoscope.platform.tasks.transformation import (
     convert_column_values_to_string as convert_column_values_to_string,
 )
@@ -116,7 +117,7 @@ from ecoscope.platform.tasks.transformation import (
 )
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
-from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
+from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool_1
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     calculate_encounter_rate_grid as calculate_encounter_rate_grid,
 )
@@ -125,9 +126,6 @@ from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
 )
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     mask_low_effort_cells as mask_low_effort_cells,
-)
-from ecoscope_workflows_ext_custom.tasks.transformation import (
-    apply_sql_query as apply_sql_query,
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,
@@ -1632,7 +1630,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     skip_report = (
-        task(invert_bool)
+        task(invert_bool_1)
         .validate()
         .set_task_instance_id("skip_report")
         .handle_errors()

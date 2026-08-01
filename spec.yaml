@@ -1,17 +1,27 @@
 id: patrol_encounter_rate_map
 
 requirements:
+  # >=2.17 required: ext-custom (rc24 / branch) imports ResultsFileType from
+  # ecoscope.platform.tasks.io._persist, added in platform 2.17.0.
   - name: "ecoscope-platform"
-    version: ">=2.15.0, <2.16.0"
+    version: ">=2.17.2, <2.18.0"
     channel: "https://repo.prefix.dev/ecoscope-workflows/"
+  # Dev mode: editable ext-custom from local checkout (branch
+  # encounter-rate-sum-column-align-task — sum_column + align task).
+  # Revert to a released rc pin + custom channel before publish.
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.0rc14"
-    channel: "https://repo.prefix.dev/ecoscope-workflows-custom/"
+    path: /Users/yunwu/MEP/wt-tasks/ecoscope-workflow-task-library/src/ecoscope-workflows-ext-custom
+    editable: true
   # ecoscope-platform >=2.11.18 requires pydeck ==0.9.2, but the custom channel
   # ships a forked pydeck 0.0.2 that wins under strict channel priority; pin
   # pydeck to conda-forge explicitly (same pattern as wt-download-patrols).
   - name: pydeck
     version: "0.9.2"
+    channel: conda-forge
+  # ext-custom (pypi/editable) requires setuptools<=81; without this the conda
+  # solve pins a newer setuptools and the pypi solve fails.
+  - name: setuptools
+    version: "<=81.0.0"
     channel: conda-forge
 
 rjsf-overrides:
