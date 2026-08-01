@@ -207,9 +207,81 @@
       "required": [],
       "title": "Group Data"
     },
-    "base_map_defs": {
+    "map_options": {
       "additionalProperties": false,
       "properties": {
+        "aggregation": {
+          "default": null,
+          "title": "",
+          "type": "object",
+          "properties": {
+            "count_or_sum": {
+              "type": "string",
+              "title": "Rate Based On",
+              "default": "Count",
+              "oneOf": [
+                {
+                  "const": "Count",
+                  "title": "Number of Events"
+                },
+                {
+                  "const": "Sum of Column",
+                  "title": "Sum of an Event Field"
+                }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "count_or_sum": {
+                    "const": "Sum of Column"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "column": {
+                    "type": "string",
+                    "title": "Event Field to Total",
+                    "description": "Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "auto_scale_or_custom_cell_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AutoScaleGridCellSize"
+            },
+            {
+              "$ref": "#/$defs/CustomGridCellSize"
+            }
+          ],
+          "default": {
+            "auto_scale_or_custom": "Auto-scale"
+          },
+          "title": "Grid Cell Size",
+          "ecoscope:advanced": true
+        },
+        "crs": {
+          "default": "EPSG:3857",
+          "title": "Coordinate Reference System",
+          "type": "string",
+          "description": "The coordinate reference system in which to perform the calculation, must be a valid CRS authority code, for example ESRI:53042",
+          "ecoscope:advanced": true
+        },
+        "threshold_km": {
+          "default": 0.2,
+          "minimum": 0.0,
+          "title": "Minimum Patrol Effort Threshold (km)",
+          "type": "number",
+          "description": "Grid cells with less patrol effort than this render grey.",
+          "ecoscope:advanced": true
+        },
         "base_maps": {
           "default": [
             {
@@ -390,7 +462,7 @@
               }
             ]
           },
-          "title": " ",
+          "title": "Map Base Layers",
           "type": "array",
           "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
           "ecoscope:advanced": true
@@ -398,64 +470,7 @@
       },
       "type": "object",
       "required": [],
-      "title": "Map Base Layers"
-    },
-    "agg_column": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "default": "",
-          "title": "",
-          "type": "string"
-        }
-      },
-      "type": "object",
-      "required": [],
-      "title": "Aggregate Column"
-    },
-    "encounter_meshgrid": {
-      "additionalProperties": false,
-      "properties": {
-        "auto_scale_or_custom_cell_size": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/AutoScaleGridCellSize"
-            },
-            {
-              "$ref": "#/$defs/CustomGridCellSize"
-            }
-          ],
-          "default": {
-            "auto_scale_or_custom": "Auto-scale"
-          },
-          "title": "Grid Cell Size",
-          "ecoscope:advanced": true
-        },
-        "crs": {
-          "default": "EPSG:3857",
-          "title": "Coordinate Reference System",
-          "type": "string",
-          "description": "The coordinate reference system in which to perform the calculation, must be a valid CRS authority code, for example ESRI:53042",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": ""
-    },
-    "mask_low_effort": {
-      "additionalProperties": false,
-      "properties": {
-        "threshold_km": {
-          "default": 0.2,
-          "title": "Threshold Km",
-          "type": "number",
-          "description": "Patrol effort threshold (km); cells below it are masked."
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Mask Low-Effort Cells Grey"
+      "title": "Map Options"
     }
   },
   "$defs": {
@@ -742,10 +757,13 @@
         "trajectory_segment_filter"
       ]
     },
-    "encounter_meshgrid": {
+    "map_options": {
       "ui:order": [
+        "aggregation",
         "auto_scale_or_custom_cell_size",
-        "crs"
+        "crs",
+        "threshold_km",
+        "base_maps"
       ]
     },
     "ui:order": [
@@ -755,10 +773,7 @@
       "er_patrol_and_events_params",
       "patrol_filters",
       "groupers",
-      "base_map_defs",
-      "agg_column",
-      "encounter_meshgrid",
-      "mask_low_effort"
+      "map_options"
     ]
   },
   "additionalProperties": false

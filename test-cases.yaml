@@ -4,22 +4,24 @@ base:
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Analyze patrol encounter rates with events."
+      name: Encounter Rate Workflow
+      description: Analyze patrol encounter rates with events.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers: []
@@ -37,47 +39,50 @@ base:
         min_y: -90.0
         max_y: 90.0
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 5000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          opacity: 0.5
-          max_zoom: 17
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+        opacity: 0.5
+        max_zoom: 17
 month-grouper:
   name: Monthly Grouper
   description: Groups dashboard widgets by month to verify per-group splits and the missing-column path through drop_inactive_grid_cells.
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Monthly encounter rate analysis."
+      name: Encounter Rate Workflow
+      description: Monthly encounter rate analysis.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers:
-        - temporal_index: "%B"
+      - temporal_index: '%B'
     patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
@@ -92,43 +97,46 @@ month-grouper:
         min_y: -90.0
         max_y: 90.0
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 5000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          opacity: 0.5
-          max_zoom: 17
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+        opacity: 0.5
+        max_zoom: 17
 fine-grid:
   name: 1km Grid Cell Size
   description: Uses a fine 1 km custom grid cell size to exercise the encounter rate map with many small cells.
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Encounter rate with 1km grid cells."
+      name: Encounter Rate Workflow
+      description: Encounter rate with 1km grid cells.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers: []
@@ -141,44 +149,47 @@ fine-grid:
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 1000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
 value-grouper-patrol-type:
   name: Value Grouper by Patrol Type
   description: Groups dashboard widgets by patrol type so each patrol category renders as its own view.
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Encounter rate grouped by patrol type."
+      name: Encounter Rate Workflow
+      description: Encounter rate grouped by patrol type.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers:
-        - index_name: "patrol_type"
+      - index_name: patrol_type
     patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
@@ -188,40 +199,43 @@ value-grouper-patrol-type:
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 5000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
 auto-scale-grid:
   name: Auto-scale Grid
   description: Uses the Auto-scale grid cell size to verify cell size selection from the data extent.
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Encounter rate with auto-scaled grid."
+      name: Encounter Rate Workflow
+      description: Encounter rate with auto-scaled grid.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers: []
@@ -234,47 +248,47 @@ auto-scale-grid:
         max_speed_kmhr: 120.0
         min_speed_kmhr: 0.01
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Auto-scale"
-    base_map_defs:
+        auto_scale_or_custom: Auto-scale
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
 spatial-grouper:
   name: Spatial Grouper
-  description: >-
-    Mocked IO — exercises the spatial grouper: trajectories and events split
-    by the mocked spatial feature group regions.
+  description: 'Mocked IO — exercises the spatial grouper: trajectories and events split by the mocked spatial feature group
+    regions.'
   mock_io: true
   params:
     workflow_details:
-      name: "Patrol Encounter Rate Map"
-      description: "Analyze patrol encounter rates with events, grouped by spatial features."
+      name: Patrol Encounter Rate Map
+      description: Analyze patrol encounter rates with events, grouped by spatial features.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers:
-        # Must match the mock feature group's metadata.display_name — the
-        # resolve task keys its lookup on that, not on the requested name.
-        - spatial_index_name: "SpatialGrouperTest"
+      - spatial_index_name: SpatialGrouperTest
     patrol_filters:
       trajectory_segment_filter:
         min_length_meters: 0.001
@@ -289,43 +303,47 @@ spatial-grouper:
         min_y: -90.0
         max_y: 90.0
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 5000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          opacity: 0.5
-          max_zoom: 17
-
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+        opacity: 0.5
+        max_zoom: 17
 agg-column:
   name: Aggregate Column Test Case
-  description: Sum an event details field per grid cell as the encounter rate numerator instead of counting events; verifies sum_column wiring and dynamic labels. The column name matches the mocked process_events_details example data.
+  description: Sum an event details field per grid cell as the encounter rate numerator instead of counting events; verifies
+    sum_column wiring and dynamic labels. The column name matches the mocked process_events_details example data.
   mock_io: true
   params:
     workflow_details:
-      name: "Encounter Rate Workflow (Aggregate Column)"
-      description: "Encounter rate using a summed event details field."
+      name: Encounter Rate Workflow (Aggregate Column)
+      description: Encounter rate using a summed event details field.
     er_client_name:
       data_source:
-        name: "mep_dev"
+        name: mep_dev
     time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
       timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: +03:00
     er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
+      patrol_types:
+      - ecoscope_patrol
+      status:
+      - done
       event_types: []
     groupers:
       groupers: []
@@ -343,19 +361,22 @@ agg-column:
         min_y: -90.0
         max_y: 90.0
       filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    agg_column:
-      var: "How many elephants are in the group?"
-    encounter_meshgrid:
+      - x: 180.0
+        y: 90.0
+      - x: 0.0
+        y: 0.0
+      - x: 1.0
+        y: 1.0
+    map_options:
+      aggregation:
+        count_or_sum: Sum of Column
+        column: How many elephants are in the group?
       auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
+        auto_scale_or_custom: Customize
         grid_cell_size: 5000
-    base_map_defs:
       base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          opacity: 0.5
-          max_zoom: 17
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+        opacity: 1.0
+      - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+        opacity: 0.5
+        max_zoom: 17

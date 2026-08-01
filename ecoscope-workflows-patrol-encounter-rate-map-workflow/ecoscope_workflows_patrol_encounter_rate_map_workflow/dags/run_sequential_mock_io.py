@@ -92,13 +92,9 @@ process_events_details = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="process_events_details",  # 🧪
 )  # 🧪
-from ecoscope.platform.tasks.analysis import create_meshgrid as create_meshgrid
 from ecoscope.platform.tasks.config import concat_string_vars as concat_string_vars
 from ecoscope.platform.tasks.config import (
     default_if_string_is_empty as default_if_string_is_empty,
-)
-from ecoscope.platform.tasks.config import (
-    set_optional_string_var as set_optional_string_var,
 )
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
@@ -111,7 +107,6 @@ from ecoscope.platform.tasks.results import create_polygon_layer as create_polyg
 from ecoscope.platform.tasks.results import draw_ecomap as draw_ecomap
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_views
-from ecoscope.platform.tasks.results import set_base_maps as set_base_maps
 from ecoscope.platform.tasks.skip import all_geometry_are_none as all_geometry_are_none
 from ecoscope.platform.tasks.skip import (
     all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
@@ -128,6 +123,21 @@ from ecoscope.platform.tasks.transformation import (
     normalize_json_column as normalize_json_column,
 )
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
+from ecoscope_workflows_ext_custom.tasks.config import (
+    call_meshgrid_from_map_options as call_meshgrid_from_map_options,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_agg_column_from_map_options as get_agg_column_from_map_options,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_base_maps_from_map_options as get_base_maps_from_map_options,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_mask_threshold_from_map_options as get_mask_threshold_from_map_options,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    set_encounter_rate_map_options as set_encounter_rate_map_options,
+)
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     calculate_encounter_rate_grid as calculate_encounter_rate_grid,
 )
@@ -964,10 +974,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    base_map_defs = (
-        task(set_base_maps)
+    map_options = (
+        task(set_encounter_rate_map_options)
         .validate()
-        .set_task_instance_id("base_map_defs")
+        .set_task_instance_id("map_options")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -977,12 +987,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("base_map_defs") or {}))
+        .partial(intersecting_only=True, **(params.get("map_options") or {}))
         .call()
     )
 
     agg_column = (
-        task(set_optional_string_var)
+        task(get_agg_column_from_map_options)
         .validate()
         .set_task_instance_id("agg_column")
         .handle_errors()
@@ -994,7 +1004,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("agg_column") or {}))
+        .partial(options=map_options, **(params.get("agg_column") or {}))
         .call()
     )
 
@@ -1068,8 +1078,25 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    base_map_defs = (
+        task(get_base_maps_from_map_options)
+        .validate()
+        .set_task_instance_id("base_map_defs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(options=map_options, **(params.get("base_map_defs") or {}))
+        .call()
+    )
+
     encounter_meshgrid = (
-        task(create_meshgrid)
+        task(call_meshgrid_from_map_options)
         .validate()
         .set_task_instance_id("encounter_meshgrid")
         .handle_errors()
@@ -1084,7 +1111,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             aoi=traj_cols_to_string,
-            intersecting_only=True,
+            options=map_options,
             **(params.get("encounter_meshgrid") or {}),
         )
         .call()
@@ -1215,6 +1242,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .mapvalues(argnames=["df"], argvalues=classify_rate)
     )
 
+    mask_threshold = (
+        task(get_mask_threshold_from_map_options)
+        .validate()
+        .set_task_instance_id("mask_threshold")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(options=map_options, **(params.get("mask_threshold") or {}))
+        .call()
+    )
+
     mask_low_effort = (
         task(mask_low_effort_cells)
         .validate()
@@ -1232,6 +1276,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             patrol_effort_column="patrol_effort_km",
             color_column="rate_colormap",
             label_column="rate_bins",
+            threshold_km=mask_threshold,
             grey_color=[128, 128, 128, 255],
             grey_label="< 200 m patrol effort",
             **(params.get("mask_low_effort") or {}),

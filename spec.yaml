@@ -44,6 +44,8 @@ rjsf-overrides:
     Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.description: >-
       Drop trajectory segments outside these length / time / speed bounds
       (e.g. to remove implausible jumps).
+    Group Data.properties.groupers.title: ""
+    Group Data.properties.groupers.properties.groupers.description: ""
     Group Data.properties.groupers.properties.groupers.ecoscope:transform:
       - transformer: EarthRangerEnumResolver
         transformer_kws:
@@ -53,15 +55,12 @@ rjsf-overrides:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
       - {"$ref": "#/$defs/SpatialGrouper"}
-    Encounter Rate Map.properties.agg_column.title: ""
-    Encounter Rate Map.properties.agg_column.properties.var.title: "Aggregate Column"
-    Encounter Rate Map.properties.agg_column.properties.var.description: >-
-      Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example "Number of Animals"). Leave empty to count events per cell instead.
-    Encounter Rate Map.properties.encounter_meshgrid.properties.auto_scale_or_custom_cell_size.default:
-      auto_scale_or_custom: "Auto-scale"
-    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
-    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.ecoscope:advanced: true
-    base_map_defs.properties.base_maps.title: "Map Base Layers"
+    # All Encounter Rate Map field titles/descriptions — including the
+    # Rate Based On allOf/if/then aggregation control (value-retaining,
+    # event-relevant wording) — live on set_encounter_rate_map_options
+    # itself (ext-custom, via the platform's
+    # make_aggregation_json_schema_extra factory).
+    Encounter Rate Map.properties.map_options.title: ""
   $defs:
     ValueGrouper:
       title: "Category"
@@ -79,16 +78,23 @@ rjsf-overrides:
               title: "Patrol Subject"
   uiSchema:
     Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
-    base_map_defs.base_maps.items.ui:options.label: false
-    Encounter Rate Map.encounter_meshgrid.auto_scale_or_custom_cell_size:
+    Encounter Rate Map.map_options.base_maps.items.ui:options.label: false
+    Encounter Rate Map.map_options.aggregation:
+      count_or_sum:
+        ui:help: Number of Events counts events per grid cell; Sum of an Event Field totals a chosen event details field (for example Number of Animals) instead.
+    Encounter Rate Map.map_options.auto_scale_or_custom_cell_size:
       anyOf:
         - ui:help: Auto-scale for an optimized grid cell size based on the workflow data or Customize to set a specific grid cell size.
-          ui:options.label: false
+          ui:options:
+            label: false
           auto_scale_or_custom:
             ui:widget: hidden
-        - ui:options.label: false
+        - ui:options:
+            label: false
           auto_scale_or_custom:
             ui:widget: hidden
+      auto_scale_or_custom:
+        ui:widget: hidden
 
 task-instance-defaults:
   skipif:
@@ -442,21 +448,28 @@ workflow:
       target: ${{ workflow.split_pe_groups.return }}
       reference: ${{ workflow.split_traj_groups.return }}
 
-  - name: Map Base Layers
-    id: base_map_defs
-    task: set_base_maps
-
   # ── Encounter Rate Grid Map (per group) ──
   - title: Encounter Rate Map
     type: task-group
     description: >-
       These settings generate a grid-based heatmap showing encounter rate (events per unit of patrol effort in each cell).
     tasks:
-      # Declared first so the card renders Aggregate Column above the grid
-      # options (card order = task order). Empty -> count events per cell.
-      - name: Aggregate Column
+      # One combined options task so the aggregation dropdown renders on top
+      # and grid cell size / CRS / mask threshold / base maps share a single
+      # Advanced Configurations accordion. intersecting_only is baked here.
+      - name: Map Options
+        id: map_options
+        task: ecoscope_workflows_ext_custom.tasks.config.set_encounter_rate_map_options
+        partial:
+          intersecting_only: true
+
+      # Invisible: "" in Total Events (count) mode, the chosen Aggregate
+      # Column in Sum of Event Column mode.
+      - name: Aggregate Column Value
         id: agg_column
-        task: set_optional_string_var
+        task: ecoscope_workflows_ext_custom.tasks.config.get_agg_column_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
 
       # Invisible: keep just event id + the chosen aggregate column from the
       # processed-details side branch. Count mode retains only "id" (the
@@ -509,9 +522,16 @@ workflow:
             - ${{ workflow.pe_groups_with_agg.return }}
             - ${{ workflow.split_traj_groups.return }}
 
+      # Invisible: base maps for the ecomap, from the combined options.
+      - name: Map Base Layers
+        id: base_map_defs
+        task: ecoscope_workflows_ext_custom.tasks.config.get_base_maps_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
+
       - name: null
         id: encounter_meshgrid
-        task: create_meshgrid
+        task: ecoscope_workflows_ext_custom.tasks.config.call_meshgrid_from_map_options
         skipif:
           conditions:
             - any_is_empty_df
@@ -519,7 +539,7 @@ workflow:
             - all_geometry_are_none
         partial:
           aoi: ${{ workflow.traj_cols_to_string.return }}
-          intersecting_only: true
+          options: ${{ workflow.map_options.return }}
 
       # Empty Aggregate Column -> sum_column "" -> the task counts events per
       # cell (optional sum mode in calculate_encounter_rate_grid itself).
@@ -596,6 +616,13 @@ workflow:
           argnames: df
           argvalues: ${{ workflow.classify_rate.return }}
 
+      # Invisible: low-effort mask threshold from the combined options.
+      - name: Mask Threshold
+        id: mask_threshold
+        task: ecoscope_workflows_ext_custom.tasks.config.get_mask_threshold_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
+
       - name: Mask Low-Effort Cells Grey
         id: mask_low_effort
         task: ecoscope_workflows_ext_custom.tasks.spatial_ops.mask_low_effort_cells
@@ -603,6 +630,7 @@ workflow:
           patrol_effort_column: "patrol_effort_km"
           color_column: "rate_colormap"
           label_column: "rate_bins"
+          threshold_km: ${{ workflow.mask_threshold.return }}
           grey_color: [128, 128, 128, 255]
           grey_label: "< 200 m patrol effort"
         mapvalues:
