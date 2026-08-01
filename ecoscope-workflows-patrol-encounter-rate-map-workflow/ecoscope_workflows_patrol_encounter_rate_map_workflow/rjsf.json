@@ -281,7 +281,7 @@
                     "properties": {
                       "column": {
                         "type": "string",
-                        "title": "Event Field to Total",
+                        "title": "Event Field to Sum",
                         "description": "Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example \"Number of Animals\")."
                       }
                     }
