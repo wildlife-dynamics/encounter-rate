@@ -62,10 +62,6 @@ rjsf-overrides:
     Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
     Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.ecoscope:advanced: true
     base_map_defs.properties.base_maps.title: "Map Base Layers"
-    Generate Report.properties.set_enable_report.properties.var.description: >-
-      Generate the Word document summary report. Check to include it in the output.
-    Generate Report.properties.set_enable_report.properties.var.default: false
-    Generate Report.properties.create_encounter_report.properties.template_path.default: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
   $defs:
     ValueGrouper:
       title: "Category"
@@ -322,27 +318,11 @@ workflow:
           gdf: ${{ workflow.traj_rename_grouper_cols.return }}
           groupers: ${{ workflow.resolved_groupers.return }}
 
-  # ── Summarize Patrol Effort (for encounter rate) ──
-  - name: Summarize Patrol Effort
-    id: patrol_effort_summary
-    task: summarize_df
-    partial:
-      df: ${{ workflow.customize_columns.return }}
-      groupby_cols: ["patrol_id"]
-      summary_params:
-        - display_name: "total_dist_m"
-          aggregator: sum
-          column: dist_meters
-        - display_name: "total_time_s"
-          aggregator: sum
-          column: timespan_seconds
-      reset_index: true
-
   # ── Process Patrol Events ──
   - title: Process Patrol Events
     type: task-group
     description: >-
-      Process patrol events by applying filters, merging effort data, and indexing.
+      Process patrol events by applying filters and indexing.
     tasks:
       - name: Remove Column Prefix (Events)
         id: drop_extra_prefix_events
@@ -405,25 +385,11 @@ workflow:
           bounding_box: ${{ workflow.bounding_box.return }}
           filter_point_coords: ${{ workflow.filter_point_coords.return }}
 
-      - name: Merge Patrol Effort into Events
-        id: events_with_effort
-        task: merge_two_dataframes
-        partial:
-          left: ${{ workflow.filter_patrol_events.return }}
-          right: ${{ workflow.patrol_effort_summary.return }}
-          how: "left"
-          on: "patrol_id"
-          left_on: null
-          right_on: null
-          left_index: false
-          right_index: false
-          fillna_value: null
-
       - name: Add temporal index to Patrol Events
         id: pe_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.events_with_effort.return }}
+          df: ${{ workflow.filter_patrol_events.return }}
           time_col: "patrol_start_time"
           groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
@@ -757,80 +723,6 @@ workflow:
         task: merge_widget_views
         partial:
           widgets: ${{ workflow.rate_map_widgets.return }}
-
-  # ── Report (skipped by default) ──
-  - title: Generate Report
-    type: task-group
-    description: >-
-      Generate a Word document report summarizing encounter rate results.
-    tasks:
-      - name: Enable Report Generation
-        id: set_enable_report
-        task: set_bool_var
-
-      - name: Invert Enable to Skip
-        id: skip_report
-        task: ecoscope_workflows_ext_custom.tasks.skip.invert_bool
-        partial:
-          value: ${{ workflow.set_enable_report.return }}
-
-      # skipif drops any_is_empty_df (issue #1): keep report rows for aligned
-      # event-less groups.
-      - name: Calculate Report Stats
-        id: report_stats_sql
-        task: apply_sql_query
-        skipif:
-          conditions:
-            - any_dependency_skipped
-        partial:
-          sanitize: true
-          query: >-
-            SELECT
-              CAST(COUNT(*) AS FLOAT) AS "Total Events",
-              ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",
-              ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(
-                (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),
-                0
-              ), 2) AS "Events Per Hour",
-              ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",
-              ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(
-                (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),
-                0
-              ), 2) AS "Events Per Km"
-            FROM df
-          columns: ["patrol_id", "total_dist_m", "total_time_s"]
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.aligned_split_pe_groups.return }}
-
-      - name: Create Encounter Rate Report
-        id: create_encounter_report
-        task: ecoscope_workflows_ext_custom.tasks.results.create_docx
-        skipif:
-          conditions:
-            - never
-        partial:
-          skip: ${{ workflow.skip_report.return }}
-          context:
-            items:
-              - item_type: timerange
-                key: report_date
-                value: ${{ workflow.time_range.return }}
-                format: "%b %Y"
-              - item_type: table
-                key: encounter_stats
-                value: ${{ workflow.report_stats_sql.return }}
-                merge_groups: true
-              - item_type: image
-                key: rate_maps
-                value: ${{ workflow.rate_ecomap_html_urls.return }}
-                screenshot_config:
-                  wait_for_timeout: 20000
-                  max_concurrent_pages: 2
-                  device_scale_factor: 1.0
-          groupers: ${{ workflow.resolved_groupers.return }}
-          output_dir: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-          filename_prefix: encounter_rate_report
 
   # ── Dashboard ──
   # Single widget: Encounter Rate Grid Map (full width)

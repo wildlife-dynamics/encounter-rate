@@ -456,35 +456,6 @@
       "required": [],
       "type": "object",
       "title": "Mask Low-Effort Cells Grey"
-    },
-    "set_enable_report": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "title": "",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Enable Report Generation"
-    },
-    "create_encounter_report": {
-      "additionalProperties": false,
-      "properties": {
-        "template_path": {
-          "title": "Template Path",
-          "type": "string",
-          "description": "Path or URL to the Word template (.docx) file with Jinja2 placeholders. Supports local paths and remote URLs (http://, https://)."
-        }
-      },
-      "required": [
-        "template_path"
-      ],
-      "type": "object",
-      "title": "Create Encounter Rate Report"
     }
   },
   "$defs": {
@@ -787,9 +758,7 @@
       "base_map_defs",
       "agg_column",
       "encounter_meshgrid",
-      "mask_low_effort",
-      "set_enable_report",
-      "create_encounter_report"
+      "mask_low_effort"
     ]
   },
   "additionalProperties": false

@@ -44,10 +44,6 @@ base:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -103,10 +99,6 @@ month-grouper:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    set_enable_report:
-      var: true
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -156,10 +148,6 @@ fine-grid:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 1000
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -207,10 +195,6 @@ value-grouper-patrol-type:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -256,65 +240,6 @@ auto-scale-grid:
     encounter_meshgrid:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Auto-scale"
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
-    base_map_defs:
-      base_maps:
-        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-          opacity: 1.0
-
-with-report:
-  name: With Report Generation
-  description: Enables Word document report generation to exercise create_docx and the screenshot pipeline.
-  mock_io: true
-  params:
-    workflow_details:
-      name: "Encounter Rate Workflow"
-      description: "Encounter rate with report generation."
-    er_client_name:
-      data_source:
-        name: "mep_dev"
-    time_range:
-      since: "2015-01-10T00:00:00"
-      until: "2015-02-28T23:59:59"
-      timezone:
-        label: "Africa/Nairobi (UTC+03:00)"
-        tzCode: "Africa/Nairobi"
-        name: "(UTC+03:00) Nairobi"
-        utc: "+03:00"
-    er_patrol_and_events_params:
-      patrol_types: ["ecoscope_patrol"]
-      status: ["done"]
-      event_types: []
-    groupers:
-      groupers: []
-    patrol_filters:
-      trajectory_segment_filter:
-        min_length_meters: 0.001
-        max_length_meters: 10000.0
-        max_time_secs: 3600.0
-        min_time_secs: 1.0
-        max_speed_kmhr: 120.0
-        min_speed_kmhr: 0.01
-      bounding_box:
-        min_x: -180.0
-        max_x: 180.0
-        min_y: -90.0
-        max_y: 90.0
-      filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-    encounter_meshgrid:
-      auto_scale_or_custom_cell_size:
-        auto_scale_or_custom: "Customize"
-        grid_cell_size: 5000
-    set_enable_report:
-      var: true
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -371,10 +296,6 @@ spatial-grouper:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -431,10 +352,6 @@ agg-column:
       auto_scale_or_custom_cell_size:
         auto_scale_or_custom: "Customize"
         grid_cell_size: 5000
-    set_enable_report:
-      var: false
-    create_encounter_report:
-      template_path: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"

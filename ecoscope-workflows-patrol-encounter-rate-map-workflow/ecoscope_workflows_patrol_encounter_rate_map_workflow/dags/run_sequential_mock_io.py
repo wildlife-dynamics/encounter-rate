@@ -67,7 +67,6 @@ get_spatial_features_group = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_spatial_features_group",  # 🧪
 )  # 🧪
-from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
 from ecoscope.platform.tasks.preprocessing import (
     relocations_to_trajectory as relocations_to_trajectory,
 )
@@ -98,7 +97,6 @@ from ecoscope.platform.tasks.config import concat_string_vars as concat_string_v
 from ecoscope.platform.tasks.config import (
     default_if_string_is_empty as default_if_string_is_empty,
 )
-from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
 from ecoscope.platform.tasks.config import (
     set_optional_string_var as set_optional_string_var,
 )
@@ -122,7 +120,6 @@ from ecoscope.platform.tasks.transformation import (
     apply_classification as apply_classification,
 )
 from ecoscope.platform.tasks.transformation import apply_color_map as apply_color_map
-from ecoscope.platform.tasks.transformation import apply_sql_query as apply_sql_query
 from ecoscope.platform.tasks.transformation import (
     convert_column_values_to_string as convert_column_values_to_string,
 )
@@ -131,8 +128,6 @@ from ecoscope.platform.tasks.transformation import (
     normalize_json_column as normalize_json_column,
 )
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
-from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
-from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool_1
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     calculate_encounter_rate_grid as calculate_encounter_rate_grid,
 )
@@ -704,40 +699,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    patrol_effort_summary = (
-        task(summarize_df)
-        .validate()
-        .set_task_instance_id("patrol_effort_summary")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=customize_columns,
-            groupby_cols=["patrol_id"],
-            summary_params=[
-                {
-                    "display_name": "total_dist_m",
-                    "aggregator": "sum",
-                    "column": "dist_meters",
-                },
-                {
-                    "display_name": "total_time_s",
-                    "aggregator": "sum",
-                    "column": "timespan_seconds",
-                },
-            ],
-            reset_index=True,
-            **(params.get("patrol_effort_summary") or {}),
-        )
-        .call()
-    )
-
     drop_extra_prefix_events = (
         task(drop_column_prefix)
         .validate()
@@ -853,34 +814,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    events_with_effort = (
-        task(merge_two_dataframes)
-        .validate()
-        .set_task_instance_id("events_with_effort")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            left=filter_patrol_events,
-            right=patrol_effort_summary,
-            how="left",
-            on="patrol_id",
-            left_on=None,
-            right_on=None,
-            left_index=False,
-            right_index=False,
-            fillna_value=None,
-            **(params.get("events_with_effort") or {}),
-        )
-        .call()
-    )
-
     pe_add_temporal_index = (
         task(add_temporal_index)
         .validate()
@@ -895,7 +828,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=events_with_effort,
+            df=filter_patrol_events,
             time_col="patrol_start_time",
             groupers=resolved_groupers,
             cast_to_datetime=True,
@@ -1505,109 +1438,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             widgets=rate_map_widgets, **(params.get("grouped_rate_map_widget") or {})
-        )
-        .call()
-    )
-
-    set_enable_report = (
-        task(set_bool_var)
-        .validate()
-        .set_task_instance_id("set_enable_report")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("set_enable_report") or {}))
-        .call()
-    )
-
-    skip_report = (
-        task(invert_bool_1)
-        .validate()
-        .set_task_instance_id("skip_report")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(value=set_enable_report, **(params.get("skip_report") or {}))
-        .call()
-    )
-
-    report_stats_sql = (
-        task(apply_sql_query)
-        .validate()
-        .set_task_instance_id("report_stats_sql")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            sanitize=True,
-            query='SELECT\n  CAST(COUNT(*) AS FLOAT) AS "Total Events",\n  ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(\n    (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),\n    0\n  ), 2) AS "Events Per Hour",\n  ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",\n  ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(\n    (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),\n    0\n  ), 2) AS "Events Per Km"\nFROM df',
-            columns=["patrol_id", "total_dist_m", "total_time_s"],
-            **(params.get("report_stats_sql") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=aligned_split_pe_groups)
-    )
-
-    create_encounter_report = (
-        task(create_docx)
-        .validate()
-        .set_task_instance_id("create_encounter_report")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            skip=skip_report,
-            context={
-                "items": [
-                    {
-                        "item_type": "timerange",
-                        "key": "report_date",
-                        "value": time_range,
-                        "format": "%b %Y",
-                    },
-                    {
-                        "item_type": "table",
-                        "key": "encounter_stats",
-                        "value": report_stats_sql,
-                        "merge_groups": True,
-                    },
-                    {
-                        "item_type": "image",
-                        "key": "rate_maps",
-                        "value": rate_ecomap_html_urls,
-                        "screenshot_config": {
-                            "wait_for_timeout": 20000,
-                            "max_concurrent_pages": 2,
-                            "device_scale_factor": 1.0,
-                        },
-                    },
-                ]
-            },
-            groupers=resolved_groupers,
-            output_dir=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-            filename_prefix="encounter_rate_report",
-            **(params.get("create_encounter_report") or {}),
         )
         .call()
     )

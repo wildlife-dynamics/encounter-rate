@@ -497,45 +497,6 @@
           "title": "Mask Low-Effort Cells Grey"
         }
       }
-    },
-    "Generate Report": {
-      "type": "object",
-      "description": "Generate a Word document report summarizing encounter rate results.",
-      "ecoscope:task_group": true,
-      "properties": {
-        "set_enable_report": {
-          "additionalProperties": false,
-          "properties": {
-            "var": {
-              "title": "",
-              "type": "boolean",
-              "description": "Generate the Word document summary report. Check to include it in the output.",
-              "default": false
-            }
-          },
-          "required": [
-            "var"
-          ],
-          "type": "object",
-          "title": "Enable Report Generation"
-        },
-        "create_encounter_report": {
-          "additionalProperties": false,
-          "properties": {
-            "template_path": {
-              "title": "Template Path",
-              "type": "string",
-              "description": "Path or URL to the Word template (.docx) file with Jinja2 placeholders. Supports local paths and remote URLs (http://, https://).",
-              "default": "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
-            }
-          },
-          "required": [
-            "template_path"
-          ],
-          "type": "object",
-          "title": "Create Encounter Rate Report"
-        }
-      }
     }
   },
   "$defs": {
@@ -874,12 +835,6 @@
         }
       }
     },
-    "Generate Report": {
-      "ui:order": [
-        "set_enable_report",
-        "create_encounter_report"
-      ]
-    },
     "ui:order": [
       "workflow_details",
       "er_client_name",
@@ -888,8 +843,7 @@
       "Filter Data",
       "Group Data",
       "base_map_defs",
-      "Encounter Rate Map",
-      "Generate Report"
+      "Encounter Rate Map"
     ],
     "base_map_defs": {
       "base_maps": {
