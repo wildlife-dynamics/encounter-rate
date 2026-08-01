@@ -395,6 +395,19 @@
       "required": [],
       "title": "Map Base Layers"
     },
+    "agg_column": {
+      "additionalProperties": false,
+      "properties": {
+        "var": {
+          "default": "",
+          "title": "",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Aggregate Column"
+    },
     "encounter_meshgrid": {
       "additionalProperties": false,
       "properties": {
@@ -424,20 +437,6 @@
       "required": [],
       "type": "object",
       "title": ""
-    },
-    "encounter_rate_grid": {
-      "additionalProperties": false,
-      "properties": {
-        "sum_column": {
-          "default": "",
-          "title": "Sum Column",
-          "type": "string",
-          "description": "Sum values in this event column per grid cell as the encounter rate numerator, rather than counting events. Leave empty to count events per cell."
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Calculate Encounter Rate per Cell"
     },
     "mask_low_effort": {
       "additionalProperties": false,
@@ -781,8 +780,8 @@
       "groupers",
       "filter_patrol_events",
       "base_map_defs",
+      "agg_column",
       "encounter_meshgrid",
-      "encounter_rate_grid",
       "mask_low_effort",
       "set_enable_report",
       "create_encounter_report"

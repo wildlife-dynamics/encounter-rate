@@ -71,12 +71,34 @@ get_spatial_features_group = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_spatial_features_group",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
+from ecoscope.platform.tasks.skip import never as never
+from ecoscope.platform.tasks.transformation import (
+    add_spatial_index as add_spatial_index,
+)
+from ecoscope.platform.tasks.transformation import (
+    add_temporal_index as add_temporal_index,
+)
+from ecoscope.platform.tasks.transformation import (
+    resolve_spatial_feature_groups_for_spatial_groupers as resolve_spatial_feature_groups_for_spatial_groupers,
+)
+
+process_events_details = create_func_magicmock(  # 🧪
+    anchor="ecoscope.platform.tasks.io",  # 🧪
+    func_name="process_events_details",  # 🧪
+)  # 🧪
 from ecoscope.platform.tasks.analysis import create_meshgrid as create_meshgrid
 from ecoscope.platform.tasks.analysis import (
     dataframe_column_mean as dataframe_column_mean,
 )
-from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
+from ecoscope.platform.tasks.config import concat_string_vars as concat_string_vars
+from ecoscope.platform.tasks.config import (
+    default_if_string_is_empty as default_if_string_is_empty,
+)
 from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
+from ecoscope.platform.tasks.config import (
+    set_optional_string_var as set_optional_string_var,
+)
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
@@ -96,13 +118,6 @@ from ecoscope.platform.tasks.skip import all_geometry_are_none as all_geometry_a
 from ecoscope.platform.tasks.skip import (
     all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
 )
-from ecoscope.platform.tasks.skip import never as never
-from ecoscope.platform.tasks.transformation import (
-    add_spatial_index as add_spatial_index,
-)
-from ecoscope.platform.tasks.transformation import (
-    add_temporal_index as add_temporal_index,
-)
 from ecoscope.platform.tasks.transformation import (
     apply_classification as apply_classification,
 )
@@ -113,7 +128,7 @@ from ecoscope.platform.tasks.transformation import (
 )
 from ecoscope.platform.tasks.transformation import fill_na as fill_na
 from ecoscope.platform.tasks.transformation import (
-    resolve_spatial_feature_groups_for_spatial_groupers as resolve_spatial_feature_groups_for_spatial_groupers,
+    normalize_json_column as normalize_json_column,
 )
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
@@ -679,6 +694,74 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    process_event_details = (
+        task(process_events_details)
+        # 🧪 validation omitted for mocked IO task (returns pre-loaded example data)
+        .set_task_instance_id("process_event_details")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_events,
+            client=er_client_name,
+            map_to_titles=True,
+            ordered=True,
+            **(params.get("process_event_details") or {}),
+        )
+        .call()
+    )
+
+    normalize_event_details = (
+        task(normalize_json_column)
+        .validate()
+        .set_task_instance_id("normalize_event_details")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=process_event_details,
+            column="event_details",
+            skip_if_not_exists=True,
+            sort_columns=False,
+            **(params.get("normalize_event_details") or {}),
+        )
+        .call()
+    )
+
+    drop_event_details_prefix = (
+        task(drop_column_prefix)
+        .validate()
+        .set_task_instance_id("drop_event_details_prefix")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=normalize_event_details,
+            prefix="event_details__",
+            duplicate_strategy="suffix",
+            **(params.get("drop_event_details_prefix") or {}),
+        )
+        .call()
+    )
+
     filter_patrol_events = (
         task(apply_reloc_coord_filter)
         .validate()
@@ -876,6 +959,74 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    agg_column = (
+        task(set_optional_string_var)
+        .validate()
+        .set_task_instance_id("agg_column")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("agg_column") or {}))
+        .call()
+    )
+
+    details_agg_subset = (
+        task(map_columns)
+        .validate()
+        .set_task_instance_id("details_agg_subset")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_event_details_prefix,
+            rename_columns={},
+            drop_columns=[],
+            retain_columns=["id", agg_column],
+            raise_if_not_found=False,
+            **(params.get("details_agg_subset") or {}),
+        )
+        .call()
+    )
+
+    pe_groups_with_agg = (
+        task(merge_two_dataframes)
+        .validate()
+        .set_task_instance_id("pe_groups_with_agg")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            right=details_agg_subset,
+            how="left",
+            on="id",
+            left_on=None,
+            right_on=None,
+            left_index=False,
+            right_index=False,
+            fillna_value=None,
+            **(params.get("pe_groups_with_agg") or {}),
+        )
+        .mapvalues(argnames=["left"], argvalues=split_pe_groups)
+    )
+
     zipped_events_traj = (
         task(groupbykey)
         .validate()
@@ -890,7 +1041,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            iterables=[split_pe_groups, split_traj_groups],
+            iterables=[pe_groups_with_agg, split_traj_groups],
             **(params.get("zipped_events_traj") or {}),
         )
         .call()
@@ -932,7 +1083,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            meshgrid=encounter_meshgrid, **(params.get("encounter_rate_grid") or {})
+            meshgrid=encounter_meshgrid,
+            sum_column=agg_column,
+            **(params.get("encounter_rate_grid") or {}),
         )
         .mapvalues(argnames=["feature_layers"], argvalues=zipped_events_traj)
     )
@@ -1066,6 +1219,47 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .mapvalues(argnames=["df"], argvalues=rate_colormap)
     )
 
+    rate_numerator_label = (
+        task(default_if_string_is_empty)
+        .validate()
+        .set_task_instance_id("rate_numerator_label")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            value=agg_column,
+            default="Events",
+            **(params.get("rate_numerator_label") or {}),
+        )
+        .call()
+    )
+
+    rate_col_label = (
+        task(concat_string_vars)
+        .validate()
+        .set_task_instance_id("rate_col_label")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            values=[rate_numerator_label, " per km"],
+            **(params.get("rate_col_label") or {}),
+        )
+        .call()
+    )
+
     rename_rate_col = (
         task(map_columns)
         .validate()
@@ -1083,11 +1277,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             drop_columns=[],
             retain_columns=[],
             rename_columns={
-                "density": "Encounter Rate (per km)",
+                "density": rate_col_label,
                 "event_count": "Events",
+                "event_sum": rate_numerator_label,
                 "patrol_effort_km": "Patrol Effort (km)",
             },
-            raise_if_not_found=True,
+            raise_if_not_found=False,
             **(params.get("rename_rate_col") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=mask_low_effort)
@@ -1114,7 +1309,11 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 "opacity": 0.4,
             },
             legend={"label_column": "rate_bins", "color_column": "rate_colormap"},
-            tooltip_columns=["Encounter Rate (per km)", "Events", "Patrol Effort (km)"],
+            tooltip_columns=[
+                rate_col_label,
+                rate_numerator_label,
+                "Patrol Effort (km)",
+            ],
             **(params.get("rate_polygon_layer") or {}),
         )
         .mapvalues(argnames=["geodataframe"], argvalues=rename_rate_col)
@@ -1155,7 +1354,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             tile_layers=base_map_defs,
             north_arrow_style={"placement": "top-left"},
             legend_style={
-                "title": "Encounter Rate (per km)",
+                "title": rate_col_label,
                 "format_title": False,
                 "placement": "bottom-right",
             },

@@ -42,6 +42,10 @@ rjsf-overrides:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
       - {"$ref": "#/$defs/SpatialGrouper"}
+    Encounter Rate Map.properties.agg_column.title: ""
+    Encounter Rate Map.properties.agg_column.properties.var.title: "Aggregate Column"
+    Encounter Rate Map.properties.agg_column.properties.var.description: >-
+      Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example "Number of Animals"). Leave empty to count events per cell instead.
     Encounter Rate Map.properties.encounter_meshgrid.properties.auto_scale_or_custom_cell_size.default:
       auto_scale_or_custom: "Auto-scale"
     Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
@@ -304,6 +308,47 @@ workflow:
           prefix: "extra__"
           duplicate_strategy: "suffix"
 
+      # Details chain (patrol-event-sum-map pattern): resolve event_details
+      # against the ER event-type schemas (keys -> display titles, enums ->
+      # labels), then flatten into top-level columns so the user-chosen
+      # Aggregate Column is addressable by the display title shown in
+      # EarthRanger. Invisible — no user-facing fields.
+      #
+      # SIDE BRANCH, not part of the main events chain: under --mock-io the
+      # io-tagged process_events_details is replaced by a magicmock returning
+      # a canned events df with no patrol columns, so passing its output
+      # downstream would break patrol_id/patrol_start_time consumers. The
+      # chosen aggregate column is instead merged back per group by event id
+      # (details_agg_subset / pe_groups_with_agg in the Encounter Rate Map
+      # group).
+      - name: Process Event Details
+        id: process_event_details
+        task: process_events_details
+        partial:
+          df: ${{ workflow.drop_extra_prefix_events.return }}
+          client: ${{ workflow.er_client_name.return }}
+          map_to_titles: true
+          ordered: true
+
+      - name: Normalize Event Details
+        id: normalize_event_details
+        task: normalize_json_column
+        partial:
+          df: ${{ workflow.process_event_details.return }}
+          column: event_details
+          skip_if_not_exists: true
+          sort_columns: false
+
+      # Collision-safe prefix removal: a details field that shadows a core
+      # column (e.g. "time") gets a _1 suffix instead of silently duplicating.
+      - name: Remove Event Details Prefix
+        id: drop_event_details_prefix
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.normalize_event_details.return }}
+          prefix: event_details__
+          duplicate_strategy: suffix
+
       - name: Apply Coordinate Filter to Patrol Events
         id: filter_patrol_events
         task: apply_reloc_coord_filter
@@ -378,24 +423,63 @@ workflow:
     task: set_base_maps
 
   # ── Encounter Rate Grid Map (per group) ──
-  - name: Zip Events and Trajectories for Grid
-    id: zipped_events_traj
-    task: groupbykey
-    skipif:
-      conditions:
-        - any_dependency_skipped
-        - all_keyed_iterables_are_skips
-      unpack_depth: 1
-    partial:
-      iterables:
-        - ${{ workflow.split_pe_groups.return }}
-        - ${{ workflow.split_traj_groups.return }}
-
   - title: Encounter Rate Map
     type: task-group
     description: >-
       These settings generate a grid-based heatmap showing encounter rate (events per unit of patrol effort in each cell).
     tasks:
+      # Declared first so the card renders Aggregate Column above the grid
+      # options (card order = task order). Empty -> count events per cell.
+      - name: Aggregate Column
+        id: agg_column
+        task: set_optional_string_var
+
+      # Invisible: keep just event id + the chosen aggregate column from the
+      # processed-details side branch. Count mode retains only "id" (the
+      # empty-string column never exists; raise_if_not_found is false).
+      - name: Select Aggregate Column Values
+        id: details_agg_subset
+        task: map_columns
+        partial:
+          df: ${{ workflow.drop_event_details_prefix.return }}
+          rename_columns: {}
+          drop_columns: []
+          retain_columns:
+            - "id"
+            - ${{ workflow.agg_column.return }}
+          raise_if_not_found: false
+
+      # Invisible: merge the aggregate values onto each split events group by
+      # event id (left join; count mode is a no-op merge on id alone).
+      - name: Merge Aggregate Column into Event Groups
+        id: pe_groups_with_agg
+        task: merge_two_dataframes
+        partial:
+          right: ${{ workflow.details_agg_subset.return }}
+          how: "left"
+          on: "id"
+          left_on: null
+          right_on: null
+          left_index: false
+          right_index: false
+          fillna_value: null
+        mapvalues:
+          argnames: left
+          argvalues: ${{ workflow.split_pe_groups.return }}
+
+      - name: Zip Events and Trajectories for Grid
+        id: zipped_events_traj
+        task: groupbykey
+        skipif:
+          conditions:
+            - any_dependency_skipped
+            - all_keyed_iterables_are_skips
+          unpack_depth: 1
+        partial:
+          iterables:
+            - ${{ workflow.pe_groups_with_agg.return }}
+            - ${{ workflow.split_traj_groups.return }}
+
       - name: null
         id: encounter_meshgrid
         task: create_meshgrid
@@ -408,11 +492,14 @@ workflow:
           aoi: ${{ workflow.traj_cols_to_string.return }}
           intersecting_only: true
 
+      # Empty Aggregate Column -> sum_column "" -> the task counts events per
+      # cell (optional sum mode in calculate_encounter_rate_grid itself).
       - name: Calculate Encounter Rate per Cell
         id: encounter_rate_grid
         task: ecoscope_workflows_ext_custom.tasks.spatial_ops.calculate_encounter_rate_grid
         partial:
           meshgrid: ${{ workflow.encounter_meshgrid.return }}
+          sum_column: ${{ workflow.agg_column.return }}
         mapvalues:
           argnames: feature_layers
           argvalues: ${{ workflow.zipped_events_traj.return }}
@@ -488,16 +575,38 @@ workflow:
           argnames: df
           argvalues: ${{ workflow.rate_colormap.return }}
 
+      # Invisible: numerator label — the Aggregate Column name when one is
+      # set, else "Events" (count mode).
+      - name: Rate Numerator Label
+        id: rate_numerator_label
+        task: default_if_string_is_empty
+        partial:
+          value: ${{ workflow.agg_column.return }}
+          default: "Events"
+
+      # Invisible: rate column / legend title — "<label> per km".
+      - name: Rate Column Label
+        id: rate_col_label
+        task: concat_string_vars
+        partial:
+          values:
+            - ${{ workflow.rate_numerator_label.return }}
+            - " per km"
+
+      # event_sum only exists in sum mode, hence raise_if_not_found: false.
+      # In count mode its rename target duplicates "Events", but a rename
+      # whose source column is absent is a no-op.
       - id: rename_rate_col
         task: map_columns
         partial:
           drop_columns: []
           retain_columns: []
           rename_columns:
-            density: "Encounter Rate (per km)"
+            density: ${{ workflow.rate_col_label.return }}
             event_count: "Events"
+            event_sum: ${{ workflow.rate_numerator_label.return }}
             patrol_effort_km: "Patrol Effort (km)"
-          raise_if_not_found: true
+          raise_if_not_found: false
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.mask_low_effort.return }}
@@ -518,7 +627,12 @@ workflow:
           legend:
             label_column: "rate_bins"
             color_column: "rate_colormap"
-          tooltip_columns: ["Encounter Rate (per km)", "Events", "Patrol Effort (km)"]
+          # Count mode: rate, Events, effort. Sum mode: rate, <Agg Title>
+          # per-cell total, effort.
+          tooltip_columns:
+            - ${{ workflow.rate_col_label.return }}
+            - ${{ workflow.rate_numerator_label.return }}
+            - "Patrol Effort (km)"
         mapvalues:
           argnames: geodataframe
           argvalues: ${{ workflow.rename_rate_col.return }}
@@ -538,7 +652,7 @@ workflow:
           north_arrow_style:
             placement: "top-left"
           legend_style:
-            title: "Encounter Rate (per km)"
+            title: ${{ workflow.rate_col_label.return }}
             format_title: false
             placement: "bottom-right"
           static: false

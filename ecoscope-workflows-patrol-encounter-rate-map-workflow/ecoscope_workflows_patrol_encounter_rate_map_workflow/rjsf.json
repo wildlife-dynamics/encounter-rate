@@ -432,6 +432,20 @@
       "description": "These settings generate a grid-based heatmap showing encounter rate (events per unit of patrol effort in each cell).",
       "ecoscope:task_group": true,
       "properties": {
+        "agg_column": {
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "default": "",
+              "title": "Aggregate Column",
+              "type": "string",
+              "description": "Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example \"Number of Animals\"). Leave empty to count events per cell instead."
+            }
+          },
+          "type": "object",
+          "required": [],
+          "title": ""
+        },
         "encounter_meshgrid": {
           "additionalProperties": false,
           "properties": {
@@ -461,20 +475,6 @@
           "required": [],
           "type": "object",
           "title": ""
-        },
-        "encounter_rate_grid": {
-          "additionalProperties": false,
-          "properties": {
-            "sum_column": {
-              "default": "",
-              "title": "Sum Column",
-              "type": "string",
-              "description": "Sum values in this event column per grid cell as the encounter rate numerator, rather than counting events. Leave empty to count events per cell."
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Calculate Encounter Rate per Cell"
         },
         "mask_low_effort": {
           "additionalProperties": false,
@@ -855,8 +855,8 @@
     },
     "Encounter Rate Map": {
       "ui:order": [
+        "agg_column",
         "encounter_meshgrid",
-        "encounter_rate_grid",
         "mask_low_effort"
       ],
       "encounter_meshgrid": {
