@@ -380,3 +380,55 @@ agg-column:
       - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
         opacity: 0.5
         max_zoom: 17
+
+mep_dev:
+  name: MEP Dev
+  description: >-
+    Live EarthRanger (mep-dev), 10 Jan - 28 Feb 2015 seeded ecoscope_patrol
+    data (same window/type as wt-download-patrols' live cases). Count mode.
+  mock_io: false
+  params:
+    workflow_details:
+      name: Encounter Rate Workflow
+      description: Live encounter rate map over seeded mep-dev patrols.
+    er_client_name:
+      data_source:
+        name: mep_dev
+    time_range:
+      since: '2015-01-10T00:00:00'
+      until: '2015-02-28T23:59:59'
+      timezone:
+        label: Africa/Nairobi (UTC+03:00)
+        tzCode: Africa/Nairobi
+        name: (UTC+03:00) Nairobi
+        utc: '+03:00'
+    er_patrol_and_events_params:
+      patrol_types: [ecoscope_patrol]
+      status: [done]
+      event_types: []
+    groupers:
+      groupers: []
+    patrol_filters:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    map_options:
+      auto_scale_or_custom_cell_size:
+        auto_scale_or_custom: Customize
+        grid_cell_size: 5000
+      base_maps:
+        - url: https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}
+          opacity: 1.0
