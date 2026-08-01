@@ -5,8 +5,8 @@
 
 ```yaml
 # fingerprint:
-artifacts_sha256_basic: 48791a6465514d16c3f2bb5a0b15321f63bfa34c7b1064502a360909de076802
-artifacts_sha256_strict: f2420ce16a59b38cb121b88e0ac1ad23dff2c9292bbd7cc8e8abbd9d65179f57
+artifacts_sha256_basic: d39e4aec7618b33da6dd3c216022eda068c5176d56327aa2e49b927f0f19184a
+artifacts_sha256_strict: 2bd07efff68365a975c2828bcb8269e3204a19fb694c7b7bac15c6c3c3437eda
 installed_requirements:
 - channel: https://repo.prefix.dev/ecoscope-workflows/
   name: ecoscope-platform
@@ -18,10 +18,10 @@ installed_requirements:
   name: pydeck
   version: {version: ==0.9.2}
 params_sha256: 7f3a1fe0634e89f0bd4db164919eaad9d45e6e954a58979d00321601f4300f87
-spec_sha256: 80893f57e08a76f6e4708a1ad8edb43c2a21b2ce1829c69e7bd703ef58f71485
+spec_sha256: 22a4eacd8142dcc39839014597113cb955433ea5c1fffab83b47ff703a563144
 
 ```
 
-# ecoscope-workflows-encounter-rate-workflow
+# ecoscope-workflows-patrol-encounter-rate-map-workflow
 
 ![](graph.png)

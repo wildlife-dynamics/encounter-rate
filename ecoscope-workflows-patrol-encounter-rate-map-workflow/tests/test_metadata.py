@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import jsonschema
 import pytest
-from ecoscope_workflows_encounter_rate_workflow.metadata import (
+from ecoscope_workflows_patrol_encounter_rate_map_workflow.metadata import (
     load_params_schema,
     load_rjsf_schema,
 )

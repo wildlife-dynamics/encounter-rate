@@ -591,7 +591,7 @@
               "title": "Template Path",
               "type": "string",
               "description": "Path or URL to the Word template (.docx) file with Jinja2 placeholders. Supports local paths and remote URLs (http://, https://).",
-              "default": "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+              "default": "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
             }
           },
           "required": [

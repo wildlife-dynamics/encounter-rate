@@ -1,4 +1,4 @@
-id: encounter_rate
+id: patrol_encounter_rate_map
 
 requirements:
   - name: "ecoscope-platform"
@@ -50,7 +50,7 @@ rjsf-overrides:
     Generate Report.properties.set_enable_report.properties.var.description: >-
       Generate the Word document summary report. Check to include it in the output.
     Generate Report.properties.set_enable_report.properties.var.default: false
-    Generate Report.properties.create_encounter_report.properties.template_path.default: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+    Generate Report.properties.create_encounter_report.properties.template_path.default: "https://raw.githubusercontent.com/wildlife-dynamics/patrol-encounter-rate-map/main/resources/templates/encounter_rate_template.docx"
   $defs:
     ValueGrouper:
       title: "Category"
