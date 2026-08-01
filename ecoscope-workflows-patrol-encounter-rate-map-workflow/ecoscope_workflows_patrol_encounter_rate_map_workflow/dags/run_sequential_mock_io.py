@@ -46,6 +46,31 @@ get_event_type_display_names_from_events = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_event_type_display_names_from_events",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.filter import (
+    get_timezone_from_time_range as get_timezone_from_time_range,
+)
+from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
+from ecoscope.platform.tasks.preprocessing import (
+    relocations_to_trajectory as relocations_to_trajectory,
+)
+from ecoscope.platform.tasks.transformation import (
+    apply_reloc_coord_filter as apply_reloc_coord_filter,
+)
+from ecoscope.platform.tasks.transformation import (
+    convert_values_to_timezone as convert_values_to_timezone,
+)
+from ecoscope.platform.tasks.transformation import (
+    extract_spatial_grouper_feature_group_names as extract_spatial_grouper_feature_group_names,
+)
+from ecoscope.platform.tasks.transformation import map_columns as map_columns
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    drop_column_prefix as drop_column_prefix,
+)
+
+get_spatial_features_group = create_func_magicmock(  # 🧪
+    anchor="ecoscope.platform.tasks.io",  # 🧪
+    func_name="get_spatial_features_group",  # 🧪
+)  # 🧪
 from ecoscope.platform.tasks.analysis import create_meshgrid as create_meshgrid
 from ecoscope.platform.tasks.analysis import (
     dataframe_column_mean as dataframe_column_mean,
@@ -53,16 +78,9 @@ from ecoscope.platform.tasks.analysis import (
 from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
 from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
-from ecoscope.platform.tasks.filter import (
-    get_timezone_from_time_range as get_timezone_from_time_range,
-)
 from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
-from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
 from ecoscope.platform.tasks.io import persist_text as persist_text
-from ecoscope.platform.tasks.preprocessing import (
-    relocations_to_trajectory as relocations_to_trajectory,
-)
 from ecoscope.platform.tasks.results import (
     create_map_widget_single_view as create_map_widget_single_view,
 )
@@ -80,6 +98,9 @@ from ecoscope.platform.tasks.skip import (
 )
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
+    add_spatial_index as add_spatial_index,
+)
+from ecoscope.platform.tasks.transformation import (
     add_temporal_index as add_temporal_index,
 )
 from ecoscope.platform.tasks.transformation import (
@@ -87,16 +108,12 @@ from ecoscope.platform.tasks.transformation import (
 )
 from ecoscope.platform.tasks.transformation import apply_color_map as apply_color_map
 from ecoscope.platform.tasks.transformation import (
-    apply_reloc_coord_filter as apply_reloc_coord_filter,
-)
-from ecoscope.platform.tasks.transformation import (
     convert_column_values_to_string as convert_column_values_to_string,
 )
-from ecoscope.platform.tasks.transformation import (
-    convert_values_to_timezone as convert_values_to_timezone,
-)
 from ecoscope.platform.tasks.transformation import fill_na as fill_na
-from ecoscope.platform.tasks.transformation import map_columns as map_columns
+from ecoscope.platform.tasks.transformation import (
+    resolve_spatial_feature_groups_for_spatial_groupers as resolve_spatial_feature_groups_for_spatial_groupers,
+)
 from ecoscope.platform.tasks.transformation import sort_values as sort_values
 from ecoscope_workflows_ext_custom.tasks.results import create_docx as create_docx
 from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
@@ -111,9 +128,6 @@ from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     apply_sql_query as apply_sql_query,
-)
-from ecoscope_workflows_ext_custom.tasks.transformation import (
-    drop_column_prefix as drop_column_prefix,
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,
@@ -485,6 +499,63 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    spatial_group_ids = (
+        task(extract_spatial_grouper_feature_group_names)
+        .validate()
+        .set_task_instance_id("spatial_group_ids")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(groupers=groupers, **(params.get("spatial_group_ids") or {}))
+        .call()
+    )
+
+    fetch_all_spatial_feature_groups = (
+        task(get_spatial_features_group)
+        # 🧪 validation omitted for mocked IO task (returns pre-loaded example data)
+        .set_task_instance_id("fetch_all_spatial_feature_groups")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            client=er_client_name,
+            **(params.get("fetch_all_spatial_feature_groups") or {}),
+        )
+        .map(argnames=["spatial_features_group_name"], argvalues=spatial_group_ids)
+    )
+
+    resolved_groupers = (
+        task(resolve_spatial_feature_groups_for_spatial_groupers)
+        .validate()
+        .set_task_instance_id("resolved_groupers")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            groupers=groupers,
+            spatial_feature_groups=fetch_all_spatial_feature_groups,
+            **(params.get("resolved_groupers") or {}),
+        )
+        .call()
+    )
+
     traj_add_temporal_index = (
         task(add_temporal_index)
         .validate()
@@ -501,7 +572,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=customize_columns,
             time_col="segment_start",
-            groupers=groupers,
+            groupers=resolved_groupers,
             cast_to_datetime=True,
             format="mixed",
             **(params.get("traj_add_temporal_index") or {}),
@@ -529,6 +600,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             raise_if_not_found=False,
             rename_columns={"patrol_type__value": "patrol_type"},
             **(params.get("traj_rename_grouper_cols") or {}),
+        )
+        .call()
+    )
+
+    traj_add_spatial_index = (
+        task(add_spatial_index)
+        .validate()
+        .set_task_instance_id("traj_add_spatial_index")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            gdf=traj_rename_grouper_cols,
+            groupers=resolved_groupers,
+            **(params.get("traj_add_spatial_index") or {}),
         )
         .call()
     )
@@ -656,10 +748,31 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=events_with_effort,
             time_col="patrol_start_time",
-            groupers=groupers,
+            groupers=resolved_groupers,
             cast_to_datetime=True,
             format="mixed",
             **(params.get("pe_add_temporal_index") or {}),
+        )
+        .call()
+    )
+
+    pe_add_spatial_index = (
+        task(add_spatial_index)
+        .validate()
+        .set_task_instance_id("pe_add_spatial_index")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            gdf=pe_add_temporal_index,
+            groupers=resolved_groupers,
+            **(params.get("pe_add_spatial_index") or {}),
         )
         .call()
     )
@@ -678,7 +791,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=traj_rename_grouper_cols,
+            df=traj_add_spatial_index,
             columns=["patrol_serial_number", "patrol_type"],
             **(params.get("traj_cols_to_string") or {}),
         )
@@ -699,7 +812,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=pe_add_temporal_index,
+            df=pe_add_spatial_index,
             columns=["patrol_serial_number", "patrol_type"],
             **(params.get("pe_cols_to_string") or {}),
         )
@@ -721,7 +834,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             df=traj_cols_to_string,
-            groupers=groupers,
+            groupers=resolved_groupers,
             **(params.get("split_traj_groups") or {}),
         )
         .call()
@@ -742,7 +855,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             df=pe_cols_to_string,
-            groupers=groupers,
+            groupers=resolved_groupers,
             **(params.get("split_pe_groups") or {}),
         )
         .call()
@@ -1597,7 +1710,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                     },
                 ]
             },
-            groupers=groupers,
+            groupers=resolved_groupers,
             output_dir=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             filename_prefix="encounter_rate_report",
             **(params.get("create_encounter_report") or {}),
@@ -1628,7 +1741,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 grouped_rate_km_widget,
                 grouped_rate_map_widget,
             ],
-            groupers=groupers,
+            groupers=resolved_groupers,
             time_range=time_range,
             **(params.get("encounter_dashboard") or {}),
         )

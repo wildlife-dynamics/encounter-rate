@@ -166,13 +166,25 @@
                   },
                   {
                     "$ref": "#/$defs/TemporalGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/SpatialGrouper"
                   }
                 ],
                 "title": "Group by"
               },
               "title": " ",
               "type": "array",
-              "description": "            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            "
+              "description": "            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            ",
+              "ecoscope:transform": [
+                {
+                  "transformer": "EarthRangerEnumResolver",
+                  "transformer_kws": {
+                    "type": "spatial_feature_group",
+                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
+                  }
+                }
+              ]
             }
           },
           "type": "object",

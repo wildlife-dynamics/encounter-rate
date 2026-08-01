@@ -23,9 +23,15 @@ rjsf-overrides:
       Specify the event type(s) to include. Enter the "Event Types" value for each event type — one per field (e.g. "wildlife_sighting_rep"). Leave empty to include all event types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.default: []
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.status.default: ["done"]
+    Process Patrol Observations.properties.groupers.properties.groupers.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
     Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
+      - {"$ref": "#/$defs/SpatialGrouper"}
     Encounter Rate Map.properties.encounter_meshgrid.properties.auto_scale_or_custom_cell_size.default:
       auto_scale_or_custom: "Auto-scale"
     Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
@@ -205,13 +211,38 @@ workflow:
         id: groupers
         task: set_groupers
 
+      # Spatial groupers: fetch the selected spatial feature groups from ER
+      # and resolve them onto the grouper specs (patrol-event-sum-map pattern).
+      # Invisible — no user-facing fields.
+      - task: extract_spatial_grouper_feature_group_names
+        id: spatial_group_ids
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+
+      - task: get_spatial_features_group
+        id: fetch_all_spatial_feature_groups
+        partial:
+          client: ${{ workflow.er_client_name.return }}
+        map:
+          argnames: spatial_features_group_name
+          argvalues: ${{ workflow.spatial_group_ids.return }}
+
+      - task: resolve_spatial_feature_groups_for_spatial_groupers
+        id: resolved_groupers
+        skipif:
+          conditions:
+            - never
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+          spatial_feature_groups: ${{ workflow.fetch_all_spatial_feature_groups.return }}
+
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
           df: ${{ workflow.customize_columns.return }}
           time_col: "segment_start"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
 
@@ -225,6 +256,13 @@ workflow:
           raise_if_not_found: false
           rename_columns:
             patrol_type__value: "patrol_type"
+
+      - name: Add spatial index to Patrol Trajectories
+        id: traj_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.traj_rename_grouper_cols.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # ── Summarize Patrol Effort (for encounter rate) ──
   - name: Summarize Patrol Effort
@@ -285,23 +323,30 @@ workflow:
         partial:
           df: ${{ workflow.events_with_effort.return }}
           time_col: "patrol_start_time"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
+
+      - name: Add spatial index to Patrol Events
+        id: pe_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.pe_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # ── Cast, Split, Persist ──
   - name: Cast Patrol Trajectory Columns
     id: traj_cols_to_string
     task: convert_column_values_to_string
     partial:
-      df: ${{ workflow.traj_rename_grouper_cols.return }}
+      df: ${{ workflow.traj_add_spatial_index.return }}
       columns: ["patrol_serial_number", "patrol_type"]
 
   - name: Cast Patrol Events Columns
     id: pe_cols_to_string
     task: convert_column_values_to_string
     partial:
-      df: ${{ workflow.pe_add_temporal_index.return }}
+      df: ${{ workflow.pe_add_spatial_index.return }}
       columns: ["patrol_serial_number", "patrol_type"]
 
   - name: Split Patrol Trajectories by Group
@@ -309,14 +354,14 @@ workflow:
     task: split_groups
     partial:
       df: ${{ workflow.traj_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
 
   - name: Split Patrol Events by Group
     id: split_pe_groups
     task: split_groups
     partial:
       df: ${{ workflow.pe_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
 
   - name: Map Base Layers
     id: base_map_defs
@@ -786,7 +831,7 @@ workflow:
                   wait_for_timeout: 20000
                   max_concurrent_pages: 2
                   device_scale_factor: 1.0
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           output_dir: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
           filename_prefix: encounter_rate_report
 
@@ -805,5 +850,5 @@ workflow:
         - ${{ workflow.grouped_total_km_widget.return }}
         - ${{ workflow.grouped_rate_km_widget.return }}
         - ${{ workflow.grouped_rate_map_widget.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
       time_range: ${{ workflow.time_range.return }}
