@@ -143,6 +143,9 @@ from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     mask_low_effort_cells as mask_low_effort_cells,
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
+    align_keyed_iterable_to_reference as align_keyed_iterable_to_reference,
+)
+from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,
 )
 
@@ -942,6 +945,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    aligned_split_pe_groups = (
+        task(align_keyed_iterable_to_reference)
+        .validate()
+        .set_task_instance_id("aligned_split_pe_groups")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            target=split_pe_groups,
+            reference=split_traj_groups,
+            **(params.get("aligned_split_pe_groups") or {}),
+        )
+        .call()
+    )
+
     base_map_defs = (
         task(set_base_maps)
         .validate()
@@ -1008,7 +1032,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
                 any_dependency_skipped,
             ],
             unpack_depth=1,
@@ -1024,7 +1047,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             fillna_value=None,
             **(params.get("pe_groups_with_agg") or {}),
         )
-        .mapvalues(argnames=["left"], argvalues=split_pe_groups)
+        .mapvalues(argnames=["left"], argvalues=aligned_split_pe_groups)
     )
 
     zipped_events_traj = (
@@ -1077,7 +1100,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
                 any_dependency_skipped,
             ],
             unpack_depth=1,
@@ -1517,7 +1539,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
                 any_dependency_skipped,
             ],
             unpack_depth=1,
@@ -1528,7 +1549,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             columns=["patrol_id", "total_dist_m", "total_time_s"],
             **(params.get("encounter_stats_sql") or {}),
         )
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+        .mapvalues(argnames=["df"], argvalues=aligned_split_pe_groups)
     )
 
     total_events_value = (
@@ -1853,7 +1874,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
                 any_dependency_skipped,
             ],
             unpack_depth=1,
@@ -1864,7 +1884,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             columns=["patrol_id", "total_dist_m", "total_time_s"],
             **(params.get("report_stats_sql") or {}),
         )
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+        .mapvalues(argnames=["df"], argvalues=aligned_split_pe_groups)
     )
 
     create_encounter_report = (

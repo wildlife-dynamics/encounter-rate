@@ -418,6 +418,17 @@ workflow:
       df: ${{ workflow.pe_cols_to_string.return }}
       groupers: ${{ workflow.resolved_groupers.return }}
 
+  # Issue #1: split_pe_groups only emits keys that exist in the events data,
+  # so groups with patrol effort but zero events (e.g. a month with patrols
+  # and no events) vanish from the events side. Reindex to the trajectory
+  # key universe, filling missing keys with an empty schema-matched df.
+  - name: Align Patrol Events to Trajectory Groups
+    id: aligned_split_pe_groups
+    task: ecoscope_workflows_ext_custom.tasks.transformation.align_keyed_iterable_to_reference
+    partial:
+      target: ${{ workflow.split_pe_groups.return }}
+      reference: ${{ workflow.split_traj_groups.return }}
+
   - name: Map Base Layers
     id: base_map_defs
     task: set_base_maps
@@ -451,9 +462,14 @@ workflow:
 
       # Invisible: merge the aggregate values onto each split events group by
       # event id (left join; count mode is a no-op merge on id alone).
+      # skipif drops any_is_empty_df (issue #1): aligned groups with zero
+      # events must pass through so the grid still renders for them.
       - name: Merge Aggregate Column into Event Groups
         id: pe_groups_with_agg
         task: merge_two_dataframes
+        skipif:
+          conditions:
+            - any_dependency_skipped
         partial:
           right: ${{ workflow.details_agg_subset.return }}
           how: "left"
@@ -465,7 +481,7 @@ workflow:
           fillna_value: null
         mapvalues:
           argnames: left
-          argvalues: ${{ workflow.split_pe_groups.return }}
+          argvalues: ${{ workflow.aligned_split_pe_groups.return }}
 
       - name: Zip Events and Trajectories for Grid
         id: zipped_events_traj
@@ -494,9 +510,14 @@ workflow:
 
       # Empty Aggregate Column -> sum_column "" -> the task counts events per
       # cell (optional sum mode in calculate_encounter_rate_grid itself).
+      # skipif drops any_is_empty_df (issue #1): the task itself renders an
+      # all-zero grid over the patrol footprint for event-less groups.
       - name: Calculate Encounter Rate per Cell
         id: encounter_rate_grid
         task: ecoscope_workflows_ext_custom.tasks.spatial_ops.calculate_encounter_rate_grid
+        skipif:
+          conditions:
+            - any_dependency_skipped
         partial:
           meshgrid: ${{ workflow.encounter_meshgrid.return }}
           sum_column: ${{ workflow.agg_column.return }}
@@ -726,9 +747,15 @@ workflow:
         partial:
           var: "Total Events"
 
+      # skipif drops any_is_empty_df (issue #1): stats must run for aligned
+      # event-less groups (COUNT(*) = 0; effort sums are NULL -> NaN widgets,
+      # pending an effort-from-trajectories composite task).
       - name: Calculate Encounter Stats
         id: encounter_stats_sql
         task: apply_sql_query
+        skipif:
+          conditions:
+            - any_dependency_skipped
         partial:
           sanitize: true
           query: >-
@@ -748,7 +775,7 @@ workflow:
           columns: ["patrol_id", "total_dist_m", "total_time_s"]
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
+          argvalues: ${{ workflow.aligned_split_pe_groups.return }}
 
       - name: Extract Total Events
         id: total_events_value
@@ -906,9 +933,14 @@ workflow:
         partial:
           value: ${{ workflow.set_enable_report.return }}
 
+      # skipif drops any_is_empty_df (issue #1): keep report rows for aligned
+      # event-less groups.
       - name: Calculate Report Stats
         id: report_stats_sql
         task: apply_sql_query
+        skipif:
+          conditions:
+            - any_dependency_skipped
         partial:
           sanitize: true
           query: >-
@@ -928,7 +960,7 @@ workflow:
           columns: ["patrol_id", "total_dist_m", "total_time_s"]
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
+          argvalues: ${{ workflow.aligned_split_pe_groups.return }}
 
       - name: Create Encounter Rate Report
         id: create_encounter_report
