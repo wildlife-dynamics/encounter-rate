@@ -68,6 +68,9 @@ from ecoscope.platform.tasks.transformation import (
     add_temporal_index as add_temporal_index,
 )
 from ecoscope.platform.tasks.transformation import (
+    align_keyed_iterable_to_reference as align_keyed_iterable_to_reference,
+)
+from ecoscope.platform.tasks.transformation import (
     apply_classification as apply_classification,
 )
 from ecoscope.platform.tasks.transformation import apply_color_map as apply_color_map
@@ -118,9 +121,6 @@ from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
 )
 from ecoscope_workflows_ext_custom.tasks.spatial_ops import (
     mask_low_effort_cells as mask_low_effort_cells,
-)
-from ecoscope_workflows_ext_custom.tasks.transformation import (
-    align_keyed_iterable_to_reference as align_keyed_iterable_to_reference,
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,

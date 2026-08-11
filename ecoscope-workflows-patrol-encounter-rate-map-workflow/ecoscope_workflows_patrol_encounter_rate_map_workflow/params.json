@@ -217,7 +217,7 @@
           "properties": {
             "count_or_sum": {
               "type": "string",
-              "title": "Rate Based On",
+              "title": "Measure Encounters By",
               "default": "Count",
               "oneOf": [
                 {
@@ -245,12 +245,20 @@
                   "column": {
                     "type": "string",
                     "title": "Event Field to Sum",
-                    "description": "Event details field whose values are totaled per grid cell as the encounter rate numerator, using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                    "description": "Event details field whose values are totaled for the Encounter metrics using the field title shown in EarthRanger (for example \"Number of Animals\")."
                   }
                 }
               }
             }
           ]
+        },
+        "threshold_km": {
+          "default": 0.2,
+          "minimum": 0.0,
+          "title": "Minimum Patrol Effort Threshold (km)",
+          "type": "number",
+          "description": "Grid cells with less patrol effort than this render grey.",
+          "ecoscope:advanced": true
         },
         "auto_scale_or_custom_cell_size": {
           "anyOf": [
@@ -272,14 +280,6 @@
           "title": "Coordinate Reference System",
           "type": "string",
           "description": "The coordinate reference system in which to perform the calculation, must be a valid CRS authority code, for example ESRI:53042",
-          "ecoscope:advanced": true
-        },
-        "threshold_km": {
-          "default": 0.2,
-          "minimum": 0.0,
-          "title": "Minimum Patrol Effort Threshold (km)",
-          "type": "number",
-          "description": "Grid cells with less patrol effort than this render grey.",
           "ecoscope:advanced": true
         },
         "base_maps": {
@@ -760,9 +760,9 @@
     "map_options": {
       "ui:order": [
         "aggregation",
+        "threshold_km",
         "auto_scale_or_custom_cell_size",
         "crs",
-        "threshold_km",
         "base_maps"
       ]
     },
