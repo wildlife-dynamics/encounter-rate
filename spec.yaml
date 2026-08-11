@@ -437,13 +437,13 @@ workflow:
       df: ${{ workflow.pe_cols_to_string.return }}
       groupers: ${{ workflow.resolved_groupers.return }}
 
-  # Issue #1: split_pe_groups only emits keys that exist in the events data,
+  # Issue: split_pe_groups only emits keys that exist in the events data,
   # so groups with patrol effort but zero events (e.g. a month with patrols
   # and no events) vanish from the events side. Reindex to the trajectory
   # key universe, filling missing keys with an empty schema-matched df.
   - name: Align Patrol Events to Trajectory Groups
     id: aligned_split_pe_groups
-    task: ecoscope_workflows_ext_custom.tasks.transformation.align_keyed_iterable_to_reference
+    task: align_keyed_iterable_to_reference
     partial:
       target: ${{ workflow.split_pe_groups.return }}
       reference: ${{ workflow.split_traj_groups.return }}
