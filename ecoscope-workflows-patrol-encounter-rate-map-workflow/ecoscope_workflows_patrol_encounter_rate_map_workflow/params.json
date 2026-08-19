@@ -217,7 +217,7 @@
           "properties": {
             "count_or_sum": {
               "type": "string",
-              "title": "Measure Encounters By",
+              "title": "Measure Events By",
               "default": "Count",
               "oneOf": [
                 {
@@ -245,7 +245,7 @@
                   "column": {
                     "type": "string",
                     "title": "Event Field to Sum",
-                    "description": "Event details field whose values are totaled for the Encounter metrics using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                    "description": "Event details field whose values are totaled, using the field title shown in EarthRanger (for example \"Number of Animals\")."
                   }
                 }
               }
