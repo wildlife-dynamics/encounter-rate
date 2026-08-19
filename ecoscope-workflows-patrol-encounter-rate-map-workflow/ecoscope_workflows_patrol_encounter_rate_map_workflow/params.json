@@ -114,9 +114,48 @@
       "type": "object",
       "title": ""
     },
-    "patrol_traj": {
+    "patrol_filters": {
       "additionalProperties": false,
       "properties": {
+        "bounding_box": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BoundingBox"
+            }
+          ],
+          "default": {
+            "min_y": -90.0,
+            "max_y": 90.0,
+            "min_x": -180.0,
+            "max_x": 180.0
+          },
+          "title": "Bounding Box",
+          "description": "Only include observations/events inside this bounding box.",
+          "ecoscope:advanced": true
+        },
+        "filter_point_coords": {
+          "default": [
+            {
+              "y": 90.0,
+              "x": 180.0
+            },
+            {
+              "y": 0.0,
+              "x": 0.0
+            },
+            {
+              "y": 1.0,
+              "x": 1.0
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/Coordinate"
+          },
+          "title": "Filter Exact Point Coordinates",
+          "type": "array",
+          "description": "Exclude observations/events at these exact coordinates.",
+          "ecoscope:advanced": true
+        },
         "trajectory_segment_filter": {
           "allOf": [
             {
@@ -131,14 +170,14 @@
             "min_speed_kmhr": 0.01,
             "max_speed_kmhr": 500
           },
-          "title": " ",
-          "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
+          "title": "Trajectory Filter",
+          "description": "Drop trajectory segments outside these length/time/speed bounds.",
           "ecoscope:advanced": true
         }
       },
-      "required": [],
       "type": "object",
-      "title": "Trajectory Segment Filter"
+      "required": [],
+      "title": "Filters"
     },
     "groupers": {
       "additionalProperties": false,
@@ -168,57 +207,81 @@
       "required": [],
       "title": "Group Data"
     },
-    "set_patrol_traj_color_column": {
+    "map_options": {
       "additionalProperties": false,
       "properties": {
-        "var": {
+        "aggregation": {
+          "default": null,
           "title": "",
-          "type": "string"
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Style Trajectory By Category"
-    },
-    "filter_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "bounding_box": {
+          "type": "object",
+          "properties": {
+            "count_or_sum": {
+              "type": "string",
+              "title": "Measure Events By",
+              "default": "Count",
+              "oneOf": [
+                {
+                  "const": "Count",
+                  "title": "Number of Events"
+                },
+                {
+                  "const": "Sum of Column",
+                  "title": "Sum of an Event Field"
+                }
+              ]
+            }
+          },
           "allOf": [
             {
-              "$ref": "#/$defs/BoundingBox"
+              "if": {
+                "properties": {
+                  "count_or_sum": {
+                    "const": "Sum of Column"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "column": {
+                    "type": "string",
+                    "title": "Event Field to Sum",
+                    "description": "Event details field whose values are totaled, using the field title shown in EarthRanger (for example \"Number of Animals\")."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "threshold_km": {
+          "default": 0.2,
+          "minimum": 0.0,
+          "title": "Minimum Patrol Effort Threshold (km)",
+          "type": "number",
+          "description": "Grid cells with less patrol effort than this render grey.",
+          "ecoscope:advanced": true
+        },
+        "auto_scale_or_custom_cell_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AutoScaleGridCellSize"
+            },
+            {
+              "$ref": "#/$defs/CustomGridCellSize"
             }
           ],
           "default": {
-            "min_y": -90.0,
-            "max_y": 90.0,
-            "min_x": -180.0,
-            "max_x": 180.0
+            "auto_scale_or_custom": "Auto-scale"
           },
-          "title": "Bounding Box",
-          "description": "Filter events to inside these bounding coordinates.",
+          "title": "Grid Cell Size",
           "ecoscope:advanced": true
         },
-        "filter_point_coords": {
-          "default": [],
-          "items": {
-            "$ref": "#/$defs/Coordinate"
-          },
-          "title": "Filter Exact Point Coordinates",
-          "type": "array",
-          "description": "By adding a filter, the workflow will not include events recorded at the specified coordinates.",
+        "crs": {
+          "default": "EPSG:3857",
+          "title": "Coordinate Reference System",
+          "type": "string",
+          "description": "The coordinate reference system in which to perform the calculation, must be a valid CRS authority code, for example ESRI:53042",
           "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Apply Coordinate Filter to Patrol Events"
-    },
-    "base_map_defs": {
-      "additionalProperties": false,
-      "properties": {
+        },
         "base_maps": {
           "default": [
             {
@@ -399,7 +462,7 @@
               }
             ]
           },
-          "title": " ",
+          "title": "Map Base Layers",
           "type": "array",
           "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
           "ecoscope:advanced": true
@@ -407,146 +470,7 @@
       },
       "type": "object",
       "required": [],
-      "title": "Map Base Layers"
-    },
-    "encounter_meshgrid": {
-      "additionalProperties": false,
-      "properties": {
-        "auto_scale_or_custom_cell_size": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/AutoScaleGridCellSize"
-            },
-            {
-              "$ref": "#/$defs/CustomGridCellSize"
-            }
-          ],
-          "default": {
-            "auto_scale_or_custom": "Auto-scale"
-          },
-          "title": "Grid Cell Size",
-          "ecoscope:advanced": true
-        },
-        "crs": {
-          "default": "EPSG:3857",
-          "title": "Coordinate Reference System",
-          "type": "string",
-          "description": "The coordinate reference system in which to perform the calculation, must be a valid CRS authority code, for example ESRI:53042",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": ""
-    },
-    "mask_low_effort": {
-      "additionalProperties": false,
-      "properties": {
-        "threshold_km": {
-          "default": 0.2,
-          "title": "Threshold Km",
-          "type": "number",
-          "description": "Patrol effort threshold (km); cells below it are masked."
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Mask Low-Effort Cells Grey"
-    },
-    "persist_patrol_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "gpkg",
-              "geoparquet",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": null,
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Trajectories"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "gpkg",
-              "geoparquet",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": "Filetypes",
-          "type": "array",
-          "description": "The output format",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": null,
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Persist Patrol Events"
-    },
-    "set_enable_report": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "title": "",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Enable Report Generation"
-    },
-    "create_encounter_report": {
-      "additionalProperties": false,
-      "properties": {
-        "template_path": {
-          "title": "Template Path",
-          "type": "string",
-          "description": "Path or URL to the Word template (.docx) file with Jinja2 placeholders. Supports local paths and remote URLs (http://, https://)."
-        }
-      },
-      "required": [
-        "template_path"
-      ],
-      "type": "object",
-      "title": "Create Encounter Rate Report"
+      "title": "Map Options"
     }
   },
   "$defs": {
@@ -589,6 +513,56 @@
         "utc"
       ],
       "title": "TimezoneInfo",
+      "type": "object"
+    },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
       "type": "object"
     },
     "TrajectorySegmentFilter": {
@@ -712,56 +686,6 @@
       "title": "Category",
       "type": "object"
     },
-    "BoundingBox": {
-      "properties": {
-        "min_y": {
-          "default": -90.0,
-          "ecoscope:advanced": true,
-          "title": "Min Latitude",
-          "type": "number"
-        },
-        "max_y": {
-          "default": 90.0,
-          "ecoscope:advanced": true,
-          "title": "Max Latitude",
-          "type": "number"
-        },
-        "min_x": {
-          "default": -180.0,
-          "ecoscope:advanced": true,
-          "title": "Min Longitude",
-          "type": "number"
-        },
-        "max_x": {
-          "default": 180.0,
-          "ecoscope:advanced": true,
-          "title": "Max Longitude",
-          "type": "number"
-        }
-      },
-      "title": "BoundingBox",
-      "type": "object"
-    },
-    "Coordinate": {
-      "properties": {
-        "y": {
-          "description": "Example -0.15293",
-          "title": "Latitude",
-          "type": "number"
-        },
-        "x": {
-          "description": "Example 37.30906",
-          "title": "Longitude",
-          "type": "number"
-        }
-      },
-      "required": [
-        "y",
-        "x"
-      ],
-      "title": "Coordinate",
-      "type": "object"
-    },
     "AutoScaleGridCellSize": {
       "properties": {
         "auto_scale_or_custom": {
@@ -826,28 +750,20 @@
         "status"
       ]
     },
-    "filter_patrol_events": {
+    "patrol_filters": {
       "ui:order": [
         "bounding_box",
-        "filter_point_coords"
+        "filter_point_coords",
+        "trajectory_segment_filter"
       ]
     },
-    "encounter_meshgrid": {
+    "map_options": {
       "ui:order": [
+        "aggregation",
+        "threshold_km",
         "auto_scale_or_custom_cell_size",
-        "crs"
-      ]
-    },
-    "persist_patrol_traj": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
-    "persist_patrol_events": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
+        "crs",
+        "base_maps"
       ]
     },
     "ui:order": [
@@ -855,17 +771,9 @@
       "er_client_name",
       "time_range",
       "er_patrol_and_events_params",
-      "patrol_traj",
+      "patrol_filters",
       "groupers",
-      "set_patrol_traj_color_column",
-      "filter_patrol_events",
-      "base_map_defs",
-      "encounter_meshgrid",
-      "mask_low_effort",
-      "persist_patrol_traj",
-      "persist_patrol_events",
-      "set_enable_report",
-      "create_encounter_report"
+      "map_options"
     ]
   },
   "additionalProperties": false

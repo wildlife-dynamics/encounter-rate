@@ -1,11 +1,14 @@
-id: encounter_rate
+id: patrol_encounter_rate_map
 
 requirements:
+  # >=2.18.4 required: ext-custom rc25 imports the generic aggregation models
+  # (CountAggregation/SumOfColumnAggregation + make_aggregation_json_schema_extra)
+  # from ecoscope.platform.tasks.analysis._patrol_summary, added in 2.18.4.
   - name: "ecoscope-platform"
-    version: ">=2.15.0, <2.16.0"
+    version: ">=2.18.4, <2.19.0"
     channel: "https://repo.prefix.dev/ecoscope-workflows/"
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.0rc14"
+    version: "0.1.0rc25"
     channel: "https://repo.prefix.dev/ecoscope-workflows-custom/"
   # ecoscope-platform >=2.11.18 requires pydeck ==0.9.2, but the custom channel
   # ships a forked pydeck 0.0.2 that wins under strict channel priority; pin
@@ -23,34 +26,34 @@ rjsf-overrides:
       Specify the event type(s) to include. Enter the "Event Types" value for each event type — one per field (e.g. "wildlife_sighting_rep"). Leave empty to include all event types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.default: []
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.status.default: ["done"]
-    Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
+    # --- Filter Data: combined filter card (obs + events + trajectory) ---
+    Filter Data.properties.patrol_filters.title: ""
+    Filter Data.properties.patrol_filters.properties.bounding_box.description: >-
+      Only include patrol observations and events whose coordinates fall
+      inside this bounding box.
+    Filter Data.properties.patrol_filters.properties.filter_point_coords.description: >-
+      Exclude observations and events recorded at these exact coordinates
+      (e.g. known bad GPS fixes).
+    Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.description: >-
+      Drop trajectory segments outside these length / time / speed bounds
+      (e.g. to remove implausible jumps).
+    Group Data.properties.groupers.title: ""
+    Group Data.properties.groupers.properties.groupers.description: ""
+    Group Data.properties.groupers.properties.groupers.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
+    Group Data.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.title: "Category"
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.description: >-
-      Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.oneOf: [
-      {"const": "patrol_type", "title": "Patrol Type"},
-      {"const": "patrol_status", "title": "Patrol Status"},
-      {"const": "patrol_subject", "title": "Patrol Subject"},
-      {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
-    ]
-    Encounter Rate Map.properties.encounter_meshgrid.properties.auto_scale_or_custom_cell_size.default:
-      auto_scale_or_custom: "Auto-scale"
-    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.title: "Minimum Patrol Effort Threshold (km)"
-    Encounter Rate Map.properties.mask_low_effort.properties.threshold_km.ecoscope:advanced: true
-    base_map_defs.properties.base_maps.title: "Map Base Layers"
-    persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
-    persist_patrol_traj.properties.filetypes.default: ["parquet"]
-    persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
-    persist_patrol_events.properties.filename_prefix.default: "patrol_events"
-    persist_patrol_events.properties.filetypes.default: ["parquet"]
-    persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
-    Generate Report.properties.set_enable_report.properties.var.description: >-
-      Generate the Word document summary report. Check to include it in the output.
-    Generate Report.properties.set_enable_report.properties.var.default: false
-    Generate Report.properties.create_encounter_report.properties.template_path.default: "https://raw.githubusercontent.com/wildlife-dynamics/encounter-rate/main/resources/templates/encounter_rate_template.docx"
+      - {"$ref": "#/$defs/SpatialGrouper"}
+    # All Encounter Rate Map field titles/descriptions — including the
+    # Rate Based On allOf/if/then aggregation control (value-retaining,
+    # event-relevant wording) — live on set_encounter_rate_map_options
+    # itself (ext-custom, via the platform's
+    # make_aggregation_json_schema_extra factory).
+    Encounter Rate Map.properties.map_options.title: ""
   $defs:
     ValueGrouper:
       title: "Category"
@@ -67,18 +70,24 @@ rjsf-overrides:
             - const: "patrol_subject"
               title: "Patrol Subject"
   uiSchema:
-    Process Patrol Observations.filter_patrol_obs.filter_point_coords.items.ui:options.label: false
-    Process Patrol Events.filter_patrol_events.filter_point_coords.items.ui:options.label: false
-    base_map_defs.base_maps.items.ui:options.label: false
-    Encounter Rate Map.encounter_meshgrid.auto_scale_or_custom_cell_size:
+    Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
+    Encounter Rate Map.map_options.base_maps.items.ui:options.label: false
+    Encounter Rate Map.map_options.aggregation:
+      count_or_sum:
+        ui:help: Number of Events counts events per grid cell; Sum of an Event Field totals a chosen event details field (for example Number of Animals) instead.
+    Encounter Rate Map.map_options.auto_scale_or_custom_cell_size:
       anyOf:
         - ui:help: Auto-scale for an optimized grid cell size based on the workflow data or Customize to set a specific grid cell size.
-          ui:options.label: false
+          ui:options:
+            label: false
           auto_scale_or_custom:
             ui:widget: hidden
-        - ui:options.label: false
+        - ui:options:
+            label: false
           auto_scale_or_custom:
             ui:widget: hidden
+      auto_scale_or_custom:
+        ui:widget: hidden
 
 task-instance-defaults:
   skipif:
@@ -161,6 +170,73 @@ workflow:
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
+  # ── Filter Data (combined card, patrol-effort-table pattern) ──
+  - title: Filter Data
+    type: task-group
+    description: " "
+    tasks:
+      # Fully qualified: ecoscope-platform 2.17 upstreamed these config tasks
+      # (verbatim) from ext-custom, so the bare names are now ambiguous.
+      - name: Filters
+        id: patrol_filters
+        task: ecoscope.platform.tasks.config.set_traj_filters
+
+  # Split the combined filter config into the pieces each consumer needs.
+  - name: Split Bounding Box
+    id: bounding_box
+    task: ecoscope.platform.tasks.config.get_bounding_box
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Point Coordinates
+    id: filter_point_coords
+    task: ecoscope.platform.tasks.config.get_filter_point_coords
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Segment Filter
+    id: segment_filter
+    task: ecoscope.platform.tasks.config.get_segment_filter
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  # ── Group Data ──
+  - title: Group Data
+    type: task-group
+    description: >-
+      Configure how data is grouped (by category, temporal index or spatial
+      feature group) and split into per-group dashboard views.
+    tasks:
+      - name: Group Data
+        id: groupers
+        task: set_groupers
+
+  # Spatial groupers: fetch the selected spatial feature groups from ER
+  # and resolve them onto the grouper specs (patrol-event-sum-map pattern).
+  # Invisible — no user-facing fields. All downstream grouper consumers use
+  # resolved_groupers, never groupers directly.
+  - task: extract_spatial_grouper_feature_group_names
+    id: spatial_group_ids
+    partial:
+      groupers: ${{ workflow.groupers.return }}
+
+  - task: get_spatial_features_group
+    id: fetch_all_spatial_feature_groups
+    partial:
+      client: ${{ workflow.er_client_name.return }}
+    map:
+      argnames: spatial_features_group_name
+      argvalues: ${{ workflow.spatial_group_ids.return }}
+
+  - task: resolve_spatial_feature_groups_for_spatial_groupers
+    id: resolved_groupers
+    skipif:
+      conditions:
+        - never
+    partial:
+      groupers: ${{ workflow.groupers.return }}
+      spatial_feature_groups: ${{ workflow.fetch_all_spatial_feature_groups.return }}
+
   # ── Process Patrol Observations → Trajectories ──
   - title: Process Patrol Observations
     type: task-group
@@ -175,6 +251,7 @@ workflow:
           prefix: "extra__"
           duplicate_strategy: "suffix"
 
+      # Coordinate/bounding-box filter from the Filter Data card.
       - name: Filter Observation Relocations
         id: filter_patrol_obs
         task: apply_reloc_coord_filter
@@ -183,21 +260,16 @@ workflow:
           roi_gdf: null
           roi_name: null
           reset_index: false
-          bounding_box:
-            min_x: -180.0
-            max_x: 180.0
-            min_y: -90.0
-            max_y: 90.0
-          filter_point_coords:
-            - {x: 180.0, y: 90.0}
-            - {x: 0.0, y: 0.0}
-            - {x: 1.0, y: 1.0}
+          bounding_box: ${{ workflow.bounding_box.return }}
+          filter_point_coords: ${{ workflow.filter_point_coords.return }}
 
+      # Trajectory segment filter from the same Filter Data card.
       - name: Trajectory Segment Filter
         id: patrol_traj
         task: relocations_to_trajectory
         partial:
           relocations: ${{ workflow.filter_patrol_obs.return }}
+          trajectory_segment_filter: ${{ workflow.segment_filter.return }}
 
       - name: Remove Column Prefix (Trajectories)
         id: drop_extra_prefix_traj
@@ -217,21 +289,13 @@ workflow:
           retain_columns: []
           raise_if_not_found: false
 
-      - name: Group Data
-        id: groupers
-        task: set_groupers
-
-      - name: Style Trajectory By Category
-        id: set_patrol_traj_color_column
-        task: set_string_var
-
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
           df: ${{ workflow.customize_columns.return }}
           time_col: "segment_start"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
 
@@ -246,36 +310,18 @@ workflow:
           rename_columns:
             patrol_type__value: "patrol_type"
 
-      - name: Patrol Traj Colormap
-        id: traj_colormap
-        task: apply_color_map
+      - name: Add spatial index to Patrol Trajectories
+        id: traj_add_spatial_index
+        task: add_spatial_index
         partial:
-          df: ${{ workflow.traj_rename_grouper_cols.return }}
-          colormap: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
-          input_column_name: ${{ workflow.set_patrol_traj_color_column.return }}
-          output_column_name: "patrol_traj_colormap"
-
-  # ── Summarize Patrol Effort (for encounter rate) ──
-  - name: Summarize Patrol Effort
-    id: patrol_effort_summary
-    task: summarize_df
-    partial:
-      df: ${{ workflow.customize_columns.return }}
-      groupby_cols: ["patrol_id"]
-      summary_params:
-        - display_name: "total_dist_m"
-          aggregator: sum
-          column: dist_meters
-        - display_name: "total_time_s"
-          aggregator: sum
-          column: timespan_seconds
-      reset_index: true
+          gdf: ${{ workflow.traj_rename_grouper_cols.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # ── Process Patrol Events ──
   - title: Process Patrol Events
     type: task-group
     description: >-
-      Process patrol events by applying filters, merging effort data, and indexing.
+      Process patrol events by applying filters and indexing.
     tasks:
       - name: Remove Column Prefix (Events)
         id: drop_extra_prefix_events
@@ -285,6 +331,48 @@ workflow:
           prefix: "extra__"
           duplicate_strategy: "suffix"
 
+      # Details chain (patrol-event-sum-map pattern): resolve event_details
+      # against the ER event-type schemas (keys -> display titles, enums ->
+      # labels), then flatten into top-level columns so the user-chosen
+      # Aggregate Column is addressable by the display title shown in
+      # EarthRanger. Invisible — no user-facing fields.
+      #
+      # SIDE BRANCH, not part of the main events chain: under --mock-io the
+      # io-tagged process_events_details is replaced by a magicmock returning
+      # a canned events df with no patrol columns, so passing its output
+      # downstream would break patrol_id/patrol_start_time consumers. The
+      # chosen aggregate column is instead merged back per group by event id
+      # (details_agg_subset / pe_groups_with_agg in the Encounter Rate Map
+      # group).
+      - name: Process Event Details
+        id: process_event_details
+        task: process_events_details
+        partial:
+          df: ${{ workflow.drop_extra_prefix_events.return }}
+          client: ${{ workflow.er_client_name.return }}
+          map_to_titles: true
+          ordered: true
+
+      - name: Normalize Event Details
+        id: normalize_event_details
+        task: normalize_json_column
+        partial:
+          df: ${{ workflow.process_event_details.return }}
+          column: event_details
+          skip_if_not_exists: true
+          sort_columns: false
+
+      # Collision-safe prefix removal: a details field that shadows a core
+      # column (e.g. "time") gets a _1 suffix instead of silently duplicating.
+      - name: Remove Event Details Prefix
+        id: drop_event_details_prefix
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.normalize_event_details.return }}
+          prefix: event_details__
+          duplicate_strategy: suffix
+
+      # Coordinate/bounding-box filter shared from the Filter Data card.
       - name: Apply Coordinate Filter to Patrol Events
         id: filter_patrol_events
         task: apply_reloc_coord_filter
@@ -293,53 +381,39 @@ workflow:
           roi_gdf: null
           roi_name: null
           reset_index: true
-
-      - name: Merge Patrol Effort into Events
-        id: events_with_effort
-        task: merge_two_dataframes
-        partial:
-          left: ${{ workflow.filter_patrol_events.return }}
-          right: ${{ workflow.patrol_effort_summary.return }}
-          how: "left"
-          on: "patrol_id"
-          left_on: null
-          right_on: null
-          left_index: false
-          right_index: false
-          fillna_value: null
+          bounding_box: ${{ workflow.bounding_box.return }}
+          filter_point_coords: ${{ workflow.filter_point_coords.return }}
 
       - name: Add temporal index to Patrol Events
         id: pe_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.events_with_effort.return }}
+          df: ${{ workflow.filter_patrol_events.return }}
           time_col: "patrol_start_time"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
 
-      - name: Patrol Events Colormap
-        id: pe_colormap
-        task: apply_color_map
+      - name: Add spatial index to Patrol Events
+        id: pe_add_spatial_index
+        task: add_spatial_index
         partial:
-          df: ${{ workflow.pe_add_temporal_index.return }}
-          input_column_name: "event_type"
-          colormap: "tab20b"
-          output_column_name: "event_type_colormap"
+          gdf: ${{ workflow.pe_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # ── Cast, Split, Persist ──
   - name: Cast Patrol Trajectory Columns
     id: traj_cols_to_string
     task: convert_column_values_to_string
     partial:
-      df: ${{ workflow.traj_colormap.return }}
+      df: ${{ workflow.traj_add_spatial_index.return }}
       columns: ["patrol_serial_number", "patrol_type"]
 
   - name: Cast Patrol Events Columns
     id: pe_cols_to_string
     task: convert_column_values_to_string
     partial:
-      df: ${{ workflow.pe_colormap.return }}
+      df: ${{ workflow.pe_add_spatial_index.return }}
       columns: ["patrol_serial_number", "patrol_type"]
 
   - name: Split Patrol Trajectories by Group
@@ -347,41 +421,110 @@ workflow:
     task: split_groups
     partial:
       df: ${{ workflow.traj_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
 
   - name: Split Patrol Events by Group
     id: split_pe_groups
     task: split_groups
     partial:
       df: ${{ workflow.pe_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
 
-  - name: Map Base Layers
-    id: base_map_defs
-    task: set_base_maps
+  # Issue: split_pe_groups only emits keys that exist in the events data,
+  # so groups with patrol effort but zero events (e.g. a month with patrols
+  # and no events) vanish from the events side. Reindex to the trajectory
+  # key universe, filling missing keys with an empty schema-matched df.
+  - name: Align Patrol Events to Trajectory Groups
+    id: aligned_split_pe_groups
+    task: align_keyed_iterable_to_reference
+    partial:
+      target: ${{ workflow.split_pe_groups.return }}
+      reference: ${{ workflow.split_traj_groups.return }}
 
   # ── Encounter Rate Grid Map (per group) ──
-  - name: Zip Events and Trajectories for Grid
-    id: zipped_events_traj
-    task: groupbykey
-    skipif:
-      conditions:
-        - any_dependency_skipped
-        - all_keyed_iterables_are_skips
-      unpack_depth: 1
-    partial:
-      iterables:
-        - ${{ workflow.split_pe_groups.return }}
-        - ${{ workflow.split_traj_groups.return }}
-
   - title: Encounter Rate Map
     type: task-group
     description: >-
       These settings generate a grid-based heatmap showing encounter rate (events per unit of patrol effort in each cell).
     tasks:
+      # One combined options task so the aggregation dropdown renders on top
+      # and grid cell size / CRS / mask threshold / base maps share a single
+      # Advanced Configurations accordion. intersecting_only is baked here.
+      - name: Map Options
+        id: map_options
+        task: ecoscope_workflows_ext_custom.tasks.config.set_encounter_rate_map_options
+        partial:
+          intersecting_only: true
+
+      # Invisible: "" in Total Events (count) mode, the chosen Aggregate
+      # Column in Sum of Event Column mode.
+      - name: Aggregate Column Value
+        id: agg_column
+        task: ecoscope_workflows_ext_custom.tasks.config.get_agg_column_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
+
+      # Invisible: keep just event id + the chosen aggregate column from the
+      # processed-details side branch. Count mode retains only "id" (the
+      # empty-string column never exists; raise_if_not_found is false).
+      - name: Select Aggregate Column Values
+        id: details_agg_subset
+        task: map_columns
+        partial:
+          df: ${{ workflow.drop_event_details_prefix.return }}
+          rename_columns: {}
+          drop_columns: []
+          retain_columns:
+            - "id"
+            - ${{ workflow.agg_column.return }}
+          raise_if_not_found: false
+
+      # Invisible: merge the aggregate values onto each split events group by
+      # event id (left join; count mode is a no-op merge on id alone).
+      # skipif drops any_is_empty_df (issue #1): aligned groups with zero
+      # events must pass through so the grid still renders for them.
+      - name: Merge Aggregate Column into Event Groups
+        id: pe_groups_with_agg
+        task: merge_two_dataframes
+        skipif:
+          conditions:
+            - any_dependency_skipped
+        partial:
+          right: ${{ workflow.details_agg_subset.return }}
+          how: "left"
+          on: "id"
+          left_on: null
+          right_on: null
+          left_index: false
+          right_index: false
+          fillna_value: null
+        mapvalues:
+          argnames: left
+          argvalues: ${{ workflow.aligned_split_pe_groups.return }}
+
+      - name: Zip Events and Trajectories for Grid
+        id: zipped_events_traj
+        task: groupbykey
+        skipif:
+          conditions:
+            - any_dependency_skipped
+            - all_keyed_iterables_are_skips
+          unpack_depth: 1
+        partial:
+          iterables:
+            - ${{ workflow.pe_groups_with_agg.return }}
+            - ${{ workflow.split_traj_groups.return }}
+
+      # Invisible: base maps for the ecomap, from the combined options.
+      - name: Map Base Layers
+        id: base_map_defs
+        task: ecoscope_workflows_ext_custom.tasks.config.get_base_maps_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
+
       - name: null
         id: encounter_meshgrid
-        task: create_meshgrid
+        task: ecoscope_workflows_ext_custom.tasks.config.call_meshgrid_from_map_options
         skipif:
           conditions:
             - any_is_empty_df
@@ -389,13 +532,21 @@ workflow:
             - all_geometry_are_none
         partial:
           aoi: ${{ workflow.traj_cols_to_string.return }}
-          intersecting_only: true
+          options: ${{ workflow.map_options.return }}
 
+      # Empty Aggregate Column -> sum_column "" -> the task counts events per
+      # cell (optional sum mode in calculate_encounter_rate_grid itself).
+      # skipif drops any_is_empty_df (issue #1): the task itself renders an
+      # all-zero grid over the patrol footprint for event-less groups.
       - name: Calculate Encounter Rate per Cell
         id: encounter_rate_grid
         task: ecoscope_workflows_ext_custom.tasks.spatial_ops.calculate_encounter_rate_grid
+        skipif:
+          conditions:
+            - any_dependency_skipped
         partial:
           meshgrid: ${{ workflow.encounter_meshgrid.return }}
+          sum_column: ${{ workflow.agg_column.return }}
         mapvalues:
           argnames: feature_layers
           argvalues: ${{ workflow.zipped_events_traj.return }}
@@ -458,6 +609,13 @@ workflow:
           argnames: df
           argvalues: ${{ workflow.classify_rate.return }}
 
+      # Invisible: low-effort mask threshold from the combined options.
+      - name: Mask Threshold
+        id: mask_threshold
+        task: ecoscope_workflows_ext_custom.tasks.config.get_mask_threshold_from_map_options
+        partial:
+          options: ${{ workflow.map_options.return }}
+
       - name: Mask Low-Effort Cells Grey
         id: mask_low_effort
         task: ecoscope_workflows_ext_custom.tasks.spatial_ops.mask_low_effort_cells
@@ -465,22 +623,45 @@ workflow:
           patrol_effort_column: "patrol_effort_km"
           color_column: "rate_colormap"
           label_column: "rate_bins"
+          threshold_km: ${{ workflow.mask_threshold.return }}
           grey_color: [128, 128, 128, 255]
           grey_label: "< 200 m patrol effort"
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.rate_colormap.return }}
 
+      # Invisible: numerator label — the Aggregate Column name when one is
+      # set, else "Events" (count mode).
+      - name: Rate Numerator Label
+        id: rate_numerator_label
+        task: default_if_string_is_empty
+        partial:
+          value: ${{ workflow.agg_column.return }}
+          default: "Events"
+
+      # Invisible: rate column / legend title — "<label> per km".
+      - name: Rate Column Label
+        id: rate_col_label
+        task: concat_string_vars
+        partial:
+          values:
+            - ${{ workflow.rate_numerator_label.return }}
+            - " per km"
+
+      # event_sum only exists in sum mode, hence raise_if_not_found: false.
+      # In count mode its rename target duplicates "Events", but a rename
+      # whose source column is absent is a no-op.
       - id: rename_rate_col
         task: map_columns
         partial:
           drop_columns: []
           retain_columns: []
           rename_columns:
-            density: "Encounter Rate (per km)"
+            density: ${{ workflow.rate_col_label.return }}
             event_count: "Events"
+            event_sum: ${{ workflow.rate_numerator_label.return }}
             patrol_effort_km: "Patrol Effort (km)"
-          raise_if_not_found: true
+          raise_if_not_found: false
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.mask_low_effort.return }}
@@ -501,7 +682,12 @@ workflow:
           legend:
             label_column: "rate_bins"
             color_column: "rate_colormap"
-          tooltip_columns: ["Encounter Rate (per km)", "Events", "Patrol Effort (km)"]
+          # Count mode: rate, Events, effort. Sum mode: rate, <Agg Title>
+          # per-cell total, effort.
+          tooltip_columns:
+            - ${{ workflow.rate_col_label.return }}
+            - ${{ workflow.rate_numerator_label.return }}
+            - "Patrol Effort (km)"
         mapvalues:
           argnames: geodataframe
           argvalues: ${{ workflow.rename_rate_col.return }}
@@ -521,7 +707,7 @@ workflow:
           north_arrow_style:
             placement: "top-left"
           legend_style:
-            title: "Encounter Rate (per km)"
+            title: ${{ workflow.rate_col_label.return }}
             format_title: false
             placement: "bottom-right"
           static: false
@@ -559,462 +745,14 @@ workflow:
         partial:
           widgets: ${{ workflow.rate_map_widgets.return }}
 
-  # ── Patrol Trajectories + Events Map ──
-  - name: Set Patrol Map Title
-    id: set_patrol_map_title
-    task: set_string_var
-    partial:
-      var: "Patrol Trajectories and Events Map"
-
-  - name: Rename Trajectory Columns for Display
-    id: rename_traj_display_cols
-    task: map_columns
-    partial:
-      drop_columns: []
-      retain_columns: []
-      raise_if_not_found: false
-      rename_columns:
-        patrol_serial_number: "Patrol Serial"
-        patrol_type__display: "Patrol Type"
-        segment_start: "Start Time"
-        timespan_seconds: "Duration (s)"
-        speed_kmhr: "Speed (kph)"
-    mapvalues:
-      argnames: df
-      argvalues: ${{ workflow.split_traj_groups.return }}
-
-  - name: Rename Event Columns for Display
-    id: rename_event_display_cols
-    task: map_columns
-    partial:
-      drop_columns: []
-      retain_columns: []
-      raise_if_not_found: false
-      rename_columns:
-        patrol_serial_number: "Patrol Serial"
-        event_type: "Event Type"
-        time: "Event Time"
-    mapvalues:
-      argnames: df
-      argvalues: ${{ workflow.split_pe_groups.return }}
-
-  - name: Create Trajectory Map Layers
-    id: traj_map_layers
-    task: create_polyline_layer
-    skipif:
-      conditions:
-        - any_is_empty_df
-        - any_dependency_skipped
-        - all_geometry_are_none
-    partial:
-      layer_style:
-        get_width: 3
-        width_units: "pixels"
-        color_column: "patrol_traj_colormap"
-      legend:
-        label_column: ${{ workflow.set_patrol_traj_color_column.return }}
-        color_column: "patrol_traj_colormap"
-      tooltip_columns: ["Patrol Serial", "Patrol Type", "Start Time", "Duration (s)", "Speed (kph)"]
-    mapvalues:
-      argnames: geodataframe
-      argvalues: ${{ workflow.rename_traj_display_cols.return }}
-
-  - name: Create Event Map Layers
-    id: event_map_layers
-    task: create_point_layer
-    skipif:
-      conditions:
-        - any_is_empty_df
-        - any_dependency_skipped
-        - all_geometry_are_none
-    partial:
-      layer_style:
-        fill_color_column: "event_type_colormap"
-        get_radius: 5
-      legend: null
-      tooltip_columns: ["Patrol Serial", "Event Type", "Event Time"]
-    mapvalues:
-      argnames: geodataframe
-      argvalues: ${{ workflow.rename_event_display_cols.return }}
-
-  - name: Combine Traj and Event Layers
-    id: combined_traj_event_layers
-    task: groupbykey
-    skipif:
-      conditions:
-        - any_dependency_skipped
-        - all_keyed_iterables_are_skips
-      unpack_depth: 1
-    partial:
-      iterables:
-        - ${{ workflow.traj_map_layers.return }}
-        - ${{ workflow.event_map_layers.return }}
-
-  - name: Draw Patrol Ecomaps
-    id: patrol_ecomap
-    task: draw_ecomap
-    partial:
-      title: null
-      tile_layers: ${{ workflow.base_map_defs.return }}
-      north_arrow_style:
-        placement: "top-left"
-      legend_style:
-        title: ${{ workflow.set_patrol_traj_color_column.return }}
-        format_title: true
-        placement: "bottom-right"
-      static: false
-      max_zoom: 20
-      widget_id: ${{ workflow.set_patrol_map_title.return }}
-    mapvalues:
-      argnames: geo_layers
-      argvalues: ${{ workflow.combined_traj_event_layers.return }}
-
-  - name: Persist Patrol Ecomaps
-    id: patrol_ecomap_html_urls
-    task: persist_text
-    partial:
-      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-      filename_suffix: "patrol_map"
-    mapvalues:
-      argnames: text
-      argvalues: ${{ workflow.patrol_ecomap.return }}
-
-  - name: Create Patrol Map Widgets
-    id: patrol_map_widgets
-    task: create_map_widget_single_view
-    skipif:
-      conditions:
-        - never
-    partial:
-      title: ${{ workflow.set_patrol_map_title.return }}
-    map:
-      argnames: [view, data]
-      argvalues: ${{ workflow.patrol_ecomap_html_urls.return }}
-
-  - name: Merge Patrol Map Views
-    id: grouped_patrol_map_widget
-    task: merge_widget_views
-    partial:
-      widgets: ${{ workflow.patrol_map_widgets.return }}
-
-  # ── Encounter Rate & Effort Stats (per group) ──
-  - title: Encounter Rate
-    type: task-group
-    description: >-
-      Calculate encounter rates and patrol effort totals.
-    tasks:
-      - name: "Set Total Hours Title"
-        id: set_total_hours_title
-        task: set_string_var
-        partial:
-          var: "Total Patrol Hours"
-
-      - name: "Set Rate Per Hour Title"
-        id: set_rate_hr_title
-        task: set_string_var
-        partial:
-          var: "Events Per Hour"
-
-      - name: "Set Total Km Title"
-        id: set_total_km_title
-        task: set_string_var
-        partial:
-          var: "Total Patrol Km"
-
-      - name: "Set Rate Per Km Title"
-        id: set_rate_km_title
-        task: set_string_var
-        partial:
-          var: "Events Per Km"
-
-      - name: "Set Total Events Title"
-        id: set_total_events_title
-        task: set_string_var
-        partial:
-          var: "Total Events"
-
-      - name: Calculate Encounter Stats
-        id: encounter_stats_sql
-        task: apply_sql_query
-        partial:
-          sanitize: true
-          query: >-
-            SELECT
-              CAST(COUNT(*) AS FLOAT) AS total_events,
-              (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0 AS total_hours,
-              CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(
-                (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),
-                0
-              ) AS events_per_hour,
-              (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0 AS total_km,
-              CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(
-                (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),
-                0
-              ) AS events_per_km
-            FROM df
-          columns: ["patrol_id", "total_dist_m", "total_time_s"]
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
-
-      - name: Extract Total Events
-        id: total_events_value
-        task: dataframe_column_mean
-        partial:
-          column_name: "total_events"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.encounter_stats_sql.return }}
-
-      - name: Extract Total Hours
-        id: total_hours_value
-        task: dataframe_column_mean
-        partial:
-          column_name: "total_hours"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.encounter_stats_sql.return }}
-
-      - name: Extract Events Per Hour
-        id: rate_per_hr_value
-        task: dataframe_column_mean
-        partial:
-          column_name: "events_per_hour"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.encounter_stats_sql.return }}
-
-      - name: Extract Total Km
-        id: total_km_value
-        task: dataframe_column_mean
-        partial:
-          column_name: "total_km"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.encounter_stats_sql.return }}
-
-      - name: Extract Events Per Km
-        id: rate_per_km_value
-        task: dataframe_column_mean
-        partial:
-          column_name: "events_per_km"
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.encounter_stats_sql.return }}
-
-      - name: Create Total Hours Widget
-        id: total_hours_widget
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: ${{ workflow.set_total_hours_title.return }}
-          decimal_places: 2
-        map:
-          argnames: [view, data]
-          argvalues: ${{ workflow.total_hours_value.return }}
-
-      - name: Create Rate Per Hour Widget
-        id: rate_hr_widget
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: ${{ workflow.set_rate_hr_title.return }}
-          decimal_places: 2
-        map:
-          argnames: [view, data]
-          argvalues: ${{ workflow.rate_per_hr_value.return }}
-
-      - name: Create Total Km Widget
-        id: total_km_widget
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: ${{ workflow.set_total_km_title.return }}
-          decimal_places: 2
-        map:
-          argnames: [view, data]
-          argvalues: ${{ workflow.total_km_value.return }}
-
-      - name: Create Rate Per Km Widget
-        id: rate_km_widget
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: ${{ workflow.set_rate_km_title.return }}
-          decimal_places: 2
-        map:
-          argnames: [view, data]
-          argvalues: ${{ workflow.rate_per_km_value.return }}
-
-      - name: Merge Total Hours Views
-        id: grouped_total_hours_widget
-        task: merge_widget_views
-        partial:
-          widgets: ${{ workflow.total_hours_widget.return }}
-
-      - name: Merge Rate Per Hour Views
-        id: grouped_rate_hr_widget
-        task: merge_widget_views
-        partial:
-          widgets: ${{ workflow.rate_hr_widget.return }}
-
-      - name: Merge Total Km Views
-        id: grouped_total_km_widget
-        task: merge_widget_views
-        partial:
-          widgets: ${{ workflow.total_km_widget.return }}
-
-      - name: Create Total Events Widget
-        id: total_events_widget
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: ${{ workflow.set_total_events_title.return }}
-          decimal_places: 0
-        map:
-          argnames: [view, data]
-          argvalues: ${{ workflow.total_events_value.return }}
-
-      - name: Merge Rate Per Km Views
-        id: grouped_rate_km_widget
-        task: merge_widget_views
-        partial:
-          widgets: ${{ workflow.rate_km_widget.return }}
-
-      - name: Merge Total Events Views
-        id: grouped_total_events_widget
-        task: merge_widget_views
-        partial:
-          widgets: ${{ workflow.total_events_widget.return }}
-
-  # ── Persist ──
-  - name: Persist Patrol Trajectories
-    id: persist_patrol_traj
-    task: persist_df_wrapper
-    partial:
-      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-      sanitize: true
-    mapvalues:
-      argnames: df
-      argvalues: ${{ workflow.split_traj_groups.return }}
-    skipif:
-      conditions:
-        - never
-
-  - name: Persist Patrol Events
-    id: persist_patrol_events
-    task: persist_df_wrapper
-    partial:
-      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-      sanitize: true
-    mapvalues:
-      argnames: df
-      argvalues: ${{ workflow.split_pe_groups.return }}
-    skipif:
-      conditions:
-        - never
-
-  # ── Report (skipped by default) ──
-  - title: Generate Report
-    type: task-group
-    description: >-
-      Generate a Word document report summarizing encounter rate results.
-    tasks:
-      - name: Enable Report Generation
-        id: set_enable_report
-        task: set_bool_var
-
-      - name: Invert Enable to Skip
-        id: skip_report
-        task: ecoscope_workflows_ext_custom.tasks.skip.invert_bool
-        partial:
-          value: ${{ workflow.set_enable_report.return }}
-
-      - name: Calculate Report Stats
-        id: report_stats_sql
-        task: apply_sql_query
-        partial:
-          sanitize: true
-          query: >-
-            SELECT
-              CAST(COUNT(*) AS FLOAT) AS "Total Events",
-              ROUND((SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)) / 3600.0, 2) AS "Total Patrol Hours",
-              ROUND(CAST(COUNT(*) AS FLOAT) * 3600.0 / NULLIF(
-                (SELECT SUM(t) FROM (SELECT DISTINCT patrol_id, total_time_s AS t FROM df)),
-                0
-              ), 2) AS "Events Per Hour",
-              ROUND((SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)) / 1000.0, 2) AS "Total Patrol Km",
-              ROUND(CAST(COUNT(*) AS FLOAT) * 1000.0 / NULLIF(
-                (SELECT SUM(d) FROM (SELECT DISTINCT patrol_id, total_dist_m AS d FROM df)),
-                0
-              ), 2) AS "Events Per Km"
-            FROM df
-          columns: ["patrol_id", "total_dist_m", "total_time_s"]
-        mapvalues:
-          argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
-
-      - name: Create Encounter Rate Report
-        id: create_encounter_report
-        task: ecoscope_workflows_ext_custom.tasks.results.create_docx
-        skipif:
-          conditions:
-            - never
-        partial:
-          skip: ${{ workflow.skip_report.return }}
-          context:
-            items:
-              - item_type: timerange
-                key: report_date
-                value: ${{ workflow.time_range.return }}
-                format: "%b %Y"
-              - item_type: table
-                key: encounter_stats
-                value: ${{ workflow.report_stats_sql.return }}
-                merge_groups: true
-              - item_type: image
-                key: patrol_maps
-                value: ${{ workflow.patrol_ecomap_html_urls.return }}
-                screenshot_config:
-                  wait_for_timeout: 20000
-                  max_concurrent_pages: 2
-                  device_scale_factor: 1.0
-              - item_type: image
-                key: rate_maps
-                value: ${{ workflow.rate_ecomap_html_urls.return }}
-                screenshot_config:
-                  wait_for_timeout: 20000
-                  max_concurrent_pages: 2
-                  device_scale_factor: 1.0
-          groupers: ${{ workflow.groupers.return }}
-          output_dir: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-          filename_prefix: encounter_rate_report
-
   # ── Dashboard ──
-  # Row 1: Total Events | Total Hours | Events/Hr | Total Km | Events/Km
-  # Row 2: Patrol+Events Map | Encounter Rate Grid Map
+  # Single widget: Encounter Rate Grid Map (full width)
   - name: Create Dashboard
     id: encounter_dashboard
     task: gather_dashboard
     partial:
       details: ${{ workflow.workflow_details.return }}
       widgets:
-        - ${{ workflow.grouped_total_events_widget.return }}
-        - ${{ workflow.grouped_total_hours_widget.return }}
-        - ${{ workflow.grouped_rate_hr_widget.return }}
-        - ${{ workflow.grouped_total_km_widget.return }}
-        - ${{ workflow.grouped_rate_km_widget.return }}
-        - ${{ workflow.grouped_patrol_map_widget.return }}
         - ${{ workflow.grouped_rate_map_widget.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
       time_range: ${{ workflow.time_range.return }}
